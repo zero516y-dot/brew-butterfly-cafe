@@ -1,0 +1,230 @@
+/* ==========================================================================
+   BREW BUTTERFLY CAFE — SECURE ADMIN API & AUTH INTEGRATION
+   Handles JWT Login, Session Persistence, Password Updates, and API Sync.
+   ========================================================================== */
+
+(function () {
+  'use strict';
+
+  var BACKEND_URL = 'http://localhost:3000';
+  var TOKEN_KEY   = 'bbc_admin_jwt';
+  var USER_KEY    = 'bbc_admin_user';
+
+  // Elements
+  var loginOverlay = document.getElementById('login-overlay');
+  var loginForm    = document.getElementById('login-form');
+  var loginError   = document.getElementById('login-error');
+  var logoutBtn    = document.getElementById('logout-btn');
+  var userLabel    = document.getElementById('logged-in-user');
+  var statusBadge  = document.getElementById('backend-status');
+
+  var changePwdForm = document.getElementById('change-pwd-form');
+  var syncBtn       = document.getElementById('btn-sync-backend');
+  var refreshResBtn = document.getElementById('btn-refresh-res');
+
+  /* ---------- GET SAVED TOKEN ---------- */
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  function setSession(token, username) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, username);
+  }
+
+  function clearSession() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  /* ---------- UPDATE UI STATE ---------- */
+  function checkAuth() {
+    var token = getToken();
+    var user  = localStorage.getItem(USER_KEY) || 'Tejbinayak Manager';
+
+    if (token) {
+      if (loginOverlay) loginOverlay.classList.add('hide');
+      if (userLabel) userLabel.textContent = user;
+      checkBackendHealth();
+    } else {
+      if (loginOverlay) loginOverlay.classList.remove('hide');
+    }
+  }
+
+  /* ---------- CHECK BACKEND HEALTH ---------- */
+  function checkBackendHealth() {
+    fetch(BACKEND_URL + '/api/csrf-token')
+      .then(function (res) {
+        if (res.ok && statusBadge) {
+          statusBadge.className = 'backend-badge online';
+          statusBadge.innerHTML = '<span class="dot"></span> Backend Online';
+        }
+      })
+      .catch(function () {
+        if (statusBadge) {
+          statusBadge.className = 'backend-badge offline';
+          statusBadge.innerHTML = '<span class="dot"></span> Backend Offline (Local Mode)';
+        }
+      });
+  }
+
+  /* ---------- LOGIN FORM HANDLER ---------- */
+  if (loginForm) {
+    loginForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var username = (document.getElementById('login-username') || {}).value || '';
+      var password = (document.getElementById('login-password') || {}).value || '';
+
+      if (!username || !password) {
+        showError('Please enter both username and password.');
+        return;
+      }
+
+      var loginBtn = document.getElementById('login-btn');
+      if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'Verifying...'; }
+      hideError();
+
+      fetch(BACKEND_URL + '/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password })
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) throw new Error(data.error || 'Authentication failed');
+            return data;
+          });
+        })
+        .then(function (data) {
+          setSession(data.token, data.username);
+          checkAuth();
+        })
+        .catch(function (err) {
+          // Fallback check for local offline mode if backend isn't running
+          if (username === 'admin' && password === 'BrewButterfly@2026') {
+            setSession('local-token-offline', 'admin');
+            checkAuth();
+          } else {
+            showError(err.message || 'Invalid username or password.');
+          }
+        })
+        .finally(function () {
+          if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
+        });
+    });
+  }
+
+  function showError(msg) {
+    if (loginError) {
+      loginError.textContent = msg;
+      loginError.style.display = 'block';
+    }
+  }
+
+  function hideError() {
+    if (loginError) loginError.style.display = 'none';
+  }
+
+  /* ---------- LOGOUT HANDLER ---------- */
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function () {
+      clearSession();
+      checkAuth();
+    });
+  }
+
+  /* ---------- CHANGE PASSWORD HANDLER ---------- */
+  if (changePwdForm) {
+    changePwdForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var currentPassword = (document.getElementById('cp-current') || {}).value || '';
+      var newPassword     = (document.getElementById('cp-new') || {}).value || '';
+
+      var token = getToken();
+      if (!token) { alert('Please log in first.'); return; }
+
+      fetch(BACKEND_URL + '/api/admin/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword })
+      })
+        .then(function (res) {
+          return res.json().then(function (d) {
+            if (!res.ok) throw new Error(d.error || 'Failed to update password');
+            return d;
+          });
+        })
+        .then(function (d) {
+          alert('✅ ' + d.message);
+          changePwdForm.reset();
+        })
+        .catch(function (err) {
+          alert('❌ Error: ' + err.message);
+        });
+    });
+  }
+
+  /* ---------- SYNC LOCAL DATA TO BACKEND ---------- */
+  if (syncBtn) {
+    syncBtn.addEventListener('click', function () {
+      var token = getToken();
+      if (!token) { alert('Please sign in to sync with backend.'); return; }
+
+      var menu = window.CafeStore ? window.CafeStore.getMenu() : [];
+      if (!menu.length) { alert('No local menu items to sync.'); return; }
+
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing...';
+
+      fetch(BACKEND_URL + '/api/admin/menu/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(menu)
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (d) {
+          alert('✅ Successfully synced ' + (d.synced || menu.length) + ' menu items to backend SQLite database!');
+        })
+        .catch(function (err) {
+          alert('❌ Sync failed: ' + err.message);
+        })
+        .finally(function () {
+          syncBtn.disabled = false;
+          syncBtn.textContent = '☁️ Sync to Backend';
+        });
+    });
+  }
+
+  /* ---------- REFRESH RESERVATIONS FROM BACKEND ---------- */
+  if (refreshResBtn) {
+    refreshResBtn.addEventListener('click', function () {
+      var token = getToken();
+      if (!token) return;
+
+      fetch(BACKEND_URL + '/api/admin/reservations', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (items) {
+          if (Array.isArray(items) && window.CafeStore) {
+            localStorage.setItem('bbc_reservations_v2', JSON.stringify(items));
+            window.CafeStore.notifyChange();
+            alert('Updated reservation list from backend database.');
+          }
+        })
+        .catch(function (err) {
+          console.warn('[AdminAPI] Could not fetch remote reservations:', err.message);
+        });
+    });
+  }
+
+  // Initialize Auth Check
+  checkAuth();
+
+})();

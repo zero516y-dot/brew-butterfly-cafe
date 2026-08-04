@@ -1,0 +1,561 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brew Butterfly Cafe — Tejbinayak, Kathmandu</title>
+  <meta name="description"
+    content="Brew Butterfly Cafe — coffee, momo, chowmein, hookah & the signature colour-shifting Butterfly Pea Tea. Tejbinayak, Baimal Marga, Kathmandu.">
+  <!-- Security Headers via Meta -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 http://localhost:8080; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://maps.google.com https://www.google.com https://google.com; object-src 'none';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Main External Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <a href="#main" class="skip-link">Skip to content</a>
+
+  <!-- ============ LOADER ============ -->
+  <div id="loader" aria-hidden="true">
+    <svg class="loader-butterfly" viewBox="0 0 120 124" fill="none">
+      <g class="wing left">
+        <path d="M58 62C40 30 12 18 6 34C0 52 22 74 58 66Z" fill="url(#gradL)" />
+        <path d="M58 66C44 78 20 84 14 96C8 108 32 112 58 92Z" fill="url(#gradL2)" />
+      </g>
+      <g class="wing right">
+        <path d="M62 62C80 30 108 18 114 34C120 52 98 74 62 66Z" fill="url(#gradR)" />
+        <path d="M62 66C76 78 100 84 106 96C112 108 88 112 62 92Z" fill="url(#gradR2)" />
+      </g>
+      <ellipse cx="60" cy="62" rx="4.5" ry="30" fill="#241f1c" />
+      <circle cx="60" cy="36" r="5" fill="#241f1c" />
+      <defs>
+        <linearGradient id="gradL" x1="6" y1="18" x2="58" y2="66" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#f2c14e" />
+          <stop offset="1" stop-color="#c97f3c" />
+        </linearGradient>
+        <linearGradient id="gradL2" x1="14" y1="66" x2="58" y2="112" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#a978d6" />
+          <stop offset="1" stop-color="#3457a6" />
+        </linearGradient>
+        <linearGradient id="gradR" x1="114" y1="18" x2="62" y2="66" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#f2c14e" />
+          <stop offset="1" stop-color="#c97f3c" />
+        </linearGradient>
+        <linearGradient id="gradR2" x1="106" y1="66" x2="62" y2="112" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#a978d6" />
+          <stop offset="1" stop-color="#3457a6" />
+        </linearGradient>
+      </defs>
+    </svg>
+    <div class="loader-text">Brew Butterfly Cafe</div>
+    <div class="loader-sub">Tejbinayak · Kathmandu</div>
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- ============ SVG ICON SPRITE ============ -->
+  <svg width="0" height="0" style="position:absolute">
+    <symbol id="ic-egg" viewBox="0 0 24 24">
+      <path d="M12 2C7 2 4 10 4 15a8 8 0 0016 0c0-5-3-13-8-13z" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-burger" viewBox="0 0 24 24">
+      <path d="M4 10a8 8 0 0116 0H4z" fill="currentColor" />
+      <rect x="3" y="12" width="18" height="2.4" rx="1.2" fill="currentColor" />
+      <path d="M4 16h16l-1.5 4h-13z" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-noodle" viewBox="0 0 24 24">
+      <path d="M4 10h16l-1.5 10a2 2 0 01-2 1.7H7.5a2 2 0 01-2-1.7L4 10z" fill="currentColor" />
+      <path d="M5 8c1-3 4-5 7-5s6 2 7 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" />
+    </symbol>
+    <symbol id="ic-cig" viewBox="0 0 24 24">
+      <rect x="2" y="10" width="16" height="4" rx="1" fill="currentColor" />
+      <rect x="18" y="10" width="4" height="4" fill="currentColor" opacity=".6" />
+    </symbol>
+    <symbol id="ic-cup-cold" viewBox="0 0 24 24">
+      <path d="M6 4h12l-1.4 15a2 2 0 01-2 1.8H9.4a2 2 0 01-2-1.8L6 4z" fill="currentColor" />
+      <path d="M5 4h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    </symbol>
+    <symbol id="ic-bolt" viewBox="0 0 24 24">
+      <path d="M13 2L4 14h6l-1 8 9-12h-6z" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-hookah" viewBox="0 0 24 24">
+      <circle cx="12" cy="8" r="4" fill="currentColor" />
+      <path d="M12 12v4M8 20h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+      <path d="M6 14c-1 1-1 3 0 4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" />
+    </symbol>
+    <symbol id="ic-lassi" viewBox="0 0 24 24">
+      <path d="M7 3h10l-1 4H8L7 3z" fill="currentColor" />
+      <path d="M8 7h8l-1.2 12.2a2 2 0 01-2 1.8h-1.6a2 2 0 01-2-1.8L8 7z" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-momo" viewBox="0 0 24 24">
+      <path d="M12 3c4 0 7 3 7 6-3 0-5 1-7 3-2-2-4-3-7-3 0-3 3-6 7-6z" fill="currentColor" />
+      <circle cx="12" cy="15" r="1.4" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-snack" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" />
+      <circle cx="9" cy="10" r="1.3" fill="currentColor" />
+      <circle cx="14" cy="9" r="1.3" fill="currentColor" />
+      <circle cx="13" cy="14" r="1.3" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-star" viewBox="0 0 24 24">
+      <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.7 7-6.3-3.8L5.7 21l1.7-7L2 9.2l7.1-.6z" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-cup-hot" viewBox="0 0 24 24">
+      <path d="M4 9h13v6a5 5 0 01-5 5H9a5 5 0 01-5-5V9z" fill="currentColor" />
+      <path d="M17 10h1.5a2.5 2.5 0 010 5H17" fill="none" stroke="currentColor" stroke-width="1.8" />
+      <path d="M8 4c0 1-1 1-1 2M12 4c0 1-1 1-1 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="ic-butterfly" viewBox="0 0 24 24">
+      <path
+        d="M12 4c-2-3-9-2-9 3 0 3 4 5 9 4-5 1-9 3-9 6 0 5 7 6 9 3M12 4c2-3 9-2 9 3 0 3-4 5-9 4 5 1 9 3 9 6 0 5-7 6-9 3"
+        fill="currentColor" />
+      <rect x="11.2" y="3" width="1.6" height="16" rx="0.8" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+      <path d="M20 20l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </symbol>
+    <symbol id="ic-pin" viewBox="0 0 24 24">
+      <path d="M12 2a7 7 0 00-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 00-7-7z" fill="none" stroke="currentColor"
+        stroke-width="1.8" />
+      <circle cx="12" cy="9" r="2.4" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8" />
+      <path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    </symbol>
+    <symbol id="ic-phone" viewBox="0 0 24 24">
+      <path d="M4 5c0-1 1-2 2-2h2l2 5-2 1c1 3 3 5 6 6l1-2 5 2v2c0 1-1 2-2 2C10 19 4 13 4 5z" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-wallet" viewBox="0 0 24 24">
+      <rect x="3" y="6" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" />
+      <path d="M3 10h18" stroke="currentColor" stroke-width="1.8" />
+      <circle cx="16" cy="14" r="1.3" fill="currentColor" />
+    </symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24">
+      <path d="M4 12l6 6L20 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+        stroke-linejoin="round" />
+    </symbol>
+    <symbol id="ic-plus" viewBox="0 0 24 24">
+      <path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+    </symbol>
+    <symbol id="ic-arrow" viewBox="0 0 24 24">
+      <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" fill="none" />
+    </symbol>
+    <symbol id="ic-up" viewBox="0 0 24 24">
+      <path d="M12 19V5M6 11l6-6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+        stroke-linejoin="round" fill="none" />
+    </symbol>
+    <symbol id="ic-calendar" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" />
+      <path d="M3 9h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    </symbol>
+    <symbol id="ic-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.8" />
+      <path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2" fill="none" stroke="currentColor" stroke-width="1.8" />
+    </symbol>
+  </svg>
+
+  <!-- ============ NAVIGATION ============ -->
+  <header id="site-nav">
+    <div class="wrap nav-inner">
+      <a href="#home" class="brand" aria-label="Brew Butterfly Cafe home">
+        <svg viewBox="0 0 120 124" fill="none">
+          <use href="#ic-butterfly" style="color:var(--orchid)" />
+        </svg>
+        <span class="brand-name">Brew Butterfly<small>Cafe · Kathmandu</small></span>
+      </a>
+      <nav class="links">
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#menu">Menu</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#location">Visit</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="#reserve" class="nav-cta">Reserve Table</a>
+      </div>
+      <button class="burger" id="burger" aria-label="Open menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+
+  <div class="mobile-panel" id="mobile-panel">
+    <a href="#home">Home</a>
+    <a href="#about">About</a>
+    <a href="#menu">Menu</a>
+    <a href="#gallery">Gallery</a>
+    <a href="#reviews">Reviews</a>
+    <a href="#location">Visit</a>
+    <a href="#reserve">Reserve Table</a>
+  </div>
+
+  <main id="main">
+
+    <!-- ============ HERO SECTION WITH BACKGROUND PHOTO ============ -->
+    <section class="hero" id="home">
+      <!-- Cafe Photo Background & Gradient Overlay -->
+      <div class="hero-bg-photo"></div>
+      <div class="hero-overlay-gradient"></div>
+
+      <div class="hero-glow glow1"></div>
+      <div class="hero-glow glow2"></div>
+
+      <div class="wrap hero-content">
+        <div class="eyebrow-row">
+          <span class="eyebrow"><span class="dot"></span>Open Daily · 11 AM to 8 PM</span>
+          <span class="rating-chip"><span class="stars">★★★★★</span> 4.8 Rating (Google Maps)</span>
+        </div>
+        <h1 class="hero-title">Coffee, momo &amp; the cup that <em>changes colour</em></h1>
+        <p class="hero-sub">A premier neighbourhood café & lounge in Tejbinayak, Kathmandu — serving artisanal chowmein,
+          crispy kurkure momo, cloud hookah, and our signature Butterfly Pea Tea.</p>
+        <div class="hero-actions">
+          <a href="#reserve" class="btn btn-primary">Reserve a Table <svg width="16" height="16" viewBox="0 0 24 24"
+              fill="none">
+              <use href="#ic-arrow" />
+            </svg></a>
+          <a href="#menu" class="btn btn-ghost">Browse Menu</a>
+        </div>
+        <div class="hero-meta">
+          <div><span class="num mono">Rs 500–2,500</span><span class="lbl">Per person spend</span></div>
+          <div><span class="num mono">60+</span><span class="lbl">Signature items</span></div>
+          <div><span class="num mono">Tejbinayak</span><span class="lbl">Baimal Marga</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT SECTION ============ -->
+    <section class="section" id="about">
+      <div class="wrap about-grid">
+        <div class="about-art reveal">
+          <img class="about-art-img" src="assets/cafe-lounge.jpeg" alt="Brew Butterfly Cafe Interior Lounge">
+          <div class="about-badge">
+            <strong style="font-family:'Fraunces',serif;font-size:16px;">Brew Butterfly Lounge</strong>
+            <div class="row"><span>Location</span><span>Tejbinayak, Kathmandu</span></div>
+            <div class="row"><span>Ambience</span><span>Cozy, String Lights & Cloud Hookah</span></div>
+          </div>
+        </div>
+        <div class="about-copy reveal">
+          <span class="kicker">Our Story</span>
+          <h2>A cozy sanctuary with a colour-changing house tea</h2>
+          <p>Tucked along Baimal Marga, Brew Butterfly Cafe is where Kathmandu’s vibrant food culture meets a relaxed
+            lounge atmosphere — serving hot spiced milk tea in the morning, wok-tossed chowmein through the afternoon,
+            and cloud hookahs after dark.</p>
+          <p>Our pride is the house pour: <strong>Butterfly Pea Tea</strong>, brewed indigo-blue from organic pea
+            flowers, shifting into royal purple when fresh lemon juice meets the cup.</p>
+          <div class="about-facts">
+            <div class="fact-card"><svg viewBox="0 0 24 24" fill="none">
+                <use href="#ic-pin" />
+              </svg>
+              <h4>Tejbinayak</h4><span>Baimal Marga, Kathmandu</span>
+            </div>
+            <div class="fact-card"><svg viewBox="0 0 24 24" fill="none">
+                <use href="#ic-clock" />
+              </svg>
+              <h4>Open Daily</h4><span>11:00 AM – 8:00 PM</span>
+            </div>
+            <div class="fact-card"><svg viewBox="0 0 24 24" fill="none">
+                <use href="#ic-phone" />
+              </svg>
+              <h4>974-4569611</h4><span>Direct Hotline</span>
+            </div>
+            <div class="fact-card"><svg viewBox="0 0 24 24" fill="none">
+                <use href="#ic-wallet" />
+              </svg>
+              <h4>Rs 500 – 2,500</h4><span>Average Guest Spend</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MENU SECTION ============ -->
+    <section class="section" id="menu">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="section-eyebrow">Full Menu</span>
+          <h2>Something for every craving</h2>
+          <p class="lead">From breakfast eggs to crispy Kurkure Momos and Cloud Hookah setups. Search dish names or
+            select categories below.</p>
+        </div>
+
+        <div class="menu-toolbar reveal">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none">
+              <use href="#ic-search" />
+            </svg>
+            <input type="text" id="menu-search" placeholder="Search dish names e.g. momo, lassi, coffee, hookah…">
+          </div>
+        </div>
+
+        <div class="tabs-scroll reveal" id="tabs-scroll" role="tablist"></div>
+
+        <div id="menu-panels"></div>
+
+        <div class="no-results" id="no-results" style="display:none;text-align:center;padding:50px 20px;">
+          <p style="font-size:16px;color:#64748b;">No dishes matching your search. Try "tea", "momo", or "burger".</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SHOWCASE SECTION ============ -->
+    <section class="section" id="showcase">
+      <div class="wrap">
+        <div class="section-head reveal"
+          style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;">
+          <div>
+            <span class="section-eyebrow">Crowd Favorites</span>
+            <h2>Most ordered dishes &amp; drinks</h2>
+            <p class="lead">Auto-scrolling through our top picks — hover or swipe to explore.</p>
+          </div>
+          <div class="showcase-controls" style="display:flex;gap:10px;align-items:center;">
+            <button type="button" id="sc-prev" class="btn btn-ghost" style="padding:10px 18px;font-size:20px;"
+              aria-label="Previous item">&#8249;</button>
+            <button type="button" id="sc-next" class="btn btn-ghost" style="padding:10px 18px;font-size:20px;"
+              aria-label="Next item">&#8250;</button>
+          </div>
+        </div>
+      </div>
+      <div class="showcase-track" id="showcase-track"></div>
+      <div class="wrap">
+        <div class="showcase-dots" id="showcase-dots"></div>
+      </div>
+    </section>
+
+
+    <!-- ============ GALLERY SECTION ============ -->
+    <section class="section" id="gallery">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="section-eyebrow">Inside Brew Butterfly</span>
+          <h2>Atmosphere &amp; Photo Gallery</h2>
+          <p class="lead">Real interior and exterior captures from our cafe in Tejbinayak.</p>
+        </div>
+        <div class="gallery-grid reveal" id="gallery-grid"></div>
+      </div>
+    </section>
+
+    <!-- ============ REVIEWS SECTION ============ -->
+    <section class="section" id="reviews">
+      <div class="wrap reviews-layout">
+        <div class="rating-summary reveal">
+          <div class="rating-big"><span class="num">4.8</span><span class="stars">★★★★★</span></div>
+          <p style="color:rgba(36,31,28,0.6);font-size:14px;margin-top:6px;">Based on 42 customer reviews on Google Maps
+          </p>
+          <div style="margin-top:24px;" id="rating-bars"></div>
+          <a href="#reserve" class="btn btn-primary" style="margin-top:26px;width:100%;justify-content:center;">Book
+            Your Table Now</a>
+        </div>
+        <div class="reviews-list reveal" id="reviews-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ RESERVATION SECTION ============ -->
+    <section class="section" id="reserve">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="section-eyebrow">Table Reservation</span>
+          <h2>Hold a table for your visit</h2>
+          <p class="lead">Select date, time, and party size — our team will confirm your booking via phone call.</p>
+        </div>
+        <div class="reserve-grid">
+          <div class="reserve-info reveal">
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div
+                style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22" style="color:#f2c14e;">
+                  <use href="#ic-pin" />
+                </svg>
+              </div>
+              <div>
+                <h4 style="color:#fff;font-size:16px;">Tejbinayak, Baimal Marga</h4><span
+                  style="color:rgba(255,255,255,0.7);font-size:14px;">Kathmandu 44600</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;margin-top:16px;">
+              <div
+                style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg viewBox="0 0 24 24" fill="none" width="22" height="22" style="color:#f2c14e;">
+                  <use href="#ic-phone" />
+                </svg>
+              </div>
+              <div>
+                <h4 style="color:#fff;font-size:16px;">974-4569611</h4><span
+                  style="color:rgba(255,255,255,0.7);font-size:14px;">Call for large groups (8+ guests)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="reserve-form reveal">
+            <div id="form-stage">
+              <h3 style="font-size:22px;margin-bottom:6px;">Reserve a Table</h3>
+              <p style="color:rgba(36,31,28,0.6);font-size:14px;margin-bottom:24px;">Takes less than a minute</p>
+              <form id="reservation-form">
+                <div class="form-grid">
+                  <div class="field full">
+                    <label for="r-name">Full Name *</label>
+                    <input type="text" id="r-name" required placeholder="Your Name">
+                  </div>
+                  <div class="field">
+                    <label for="r-phone">Phone Number *</label>
+                    <input type="tel" id="r-phone" required placeholder="98XXXXXXXX">
+                  </div>
+                  <div class="field">
+                    <label>Guests</label>
+                    <div
+                      style="display:flex;align-items:center;gap:10px;background:var(--cream-dim);border:1.5px solid var(--line);border-radius:11px;padding:6px 12px;">
+                      <button type="button" id="guest-minus"
+                        style="border:none;background:#fff;border-radius:6px;width:28px;height:28px;font-weight:700;">-</button>
+                      <span id="guest-count" class="mono" style="flex:1;text-align:center;font-weight:700;">2</span>
+                      <button type="button" id="guest-plus"
+                        style="border:none;background:#fff;border-radius:6px;width:28px;height:28px;font-weight:700;">+</button>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="r-date">Date *</label>
+                    <input type="date" id="r-date" required>
+                  </div>
+                  <div class="field">
+                    <label for="r-time">Time Slot *</label>
+                    <select id="r-time" required>
+                      <option value="">Select Time</option>
+                      <option>11:00 AM</option>
+                      <option>12:00 PM</option>
+                      <option>1:00 PM</option>
+                      <option>2:00 PM</option>
+                      <option>3:00 PM</option>
+                      <option>4:00 PM</option>
+                      <option>5:00 PM</option>
+                      <option>6:00 PM</option>
+                      <option>7:00 PM</option>
+                    </select>
+                  </div>
+                  <div class="field full">
+                    <label for="r-occasion">Occasion (Optional)</label>
+                    <select id="r-occasion">
+                      <option value="">Casual Visit</option>
+                      <option>Birthday</option>
+                      <option>Anniversary</option>
+                      <option>Friends Hangout</option>
+                    </select>
+                  </div>
+                  <div class="field full">
+                    <label for="r-notes">Special Requests / Dish Notes</label>
+                    <textarea id="r-notes" placeholder="Hookah flavor, window table, dietary requests..."></textarea>
+                  </div>
+                </div>
+                <button type="submit" class="submit-btn">Submit Reservation</button>
+              </form>
+            </div>
+
+            <div id="confirm-panel" style="display:none;text-align:center;padding:20px 0;">
+              <h3 style="color:var(--pea-deep);font-size:24px;margin-bottom:8px;">Table Reserved!</h3>
+              <p id="confirm-ref" class="mono" style="font-weight:700;color:var(--amber-deep);margin-bottom:16px;"></p>
+              <div id="confirm-details"
+                style="background:var(--cream-dim);padding:16px;border-radius:12px;margin-bottom:20px;text-align:left;">
+              </div>
+              <button id="new-reservation" class="btn btn-ghost"
+                style="color:var(--ink);border-color:var(--line);width:100%;justify-content:center;">Make Another
+                Reservation</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LOCATION SECTION ============ -->
+    <section class="section" id="location">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="section-eyebrow">Find Us</span>
+          <h2>Visit Brew Butterfly Cafe</h2>
+          <p class="lead">Located right off Baimal Marga in Tejbinayak, Kathmandu.</p>
+        </div>
+        <div class="location-grid reveal">
+          <div class="map-frame">
+            <iframe title="Brew Butterfly Cafe Map" loading="lazy"
+              src="https://maps.google.com/maps?q=27.7059015,85.3806792(Brew%20Butterfly%20Cafe)&z=16&output=embed"></iframe>
+          </div>
+          <div
+            style="background:var(--cream-dim);border-radius:20px;padding:32px;display:flex;flex-direction:column;justify-content:center;gap:18px;">
+            <div>
+              <h4>Address</h4>
+              <p>Tejbinayak, Baimal Marga, Kathmandu 44600</p>
+            </div>
+            <div>
+              <h4>Opening Hours</h4>
+              <p>Daily: 11:00 AM – 8:00 PM</p>
+            </div>
+            <div>
+              <h4>Phone</h4>
+              <p><a href="tel:9744569611" style="color:var(--pea-deep);font-weight:700;">974-4569611</a></p>
+            </div>
+            <div style="margin-top:10px;">
+              <a href="https://www.google.com/maps/dir/?api=1&destination=27.7059015,85.3806792" target="_blank"
+                rel="noopener" class="btn btn-primary">Get Directions</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <div class="wrap footer-grid">
+      <div>
+        <div class="footer-brand"><svg width="32" height="32" viewBox="0 0 120 124" fill="none">
+            <use href="#ic-butterfly" style="color:#a978d6" />
+          </svg><span>Brew Butterfly Cafe</span></div>
+        <p style="font-size:14px;line-height:1.6;">A coffee, momo &amp; hookah lounge in Tejbinayak, Kathmandu — home of
+          the signature Butterfly Pea Tea.</p>
+      </div>
+      <div>
+        <h5 style="color:#fff;margin-bottom:12px;font-family:'Space Mono',monospace;">Explore</h5>
+        <p><a href="#about">About Us</a></p>
+        <p><a href="#menu">Menu</a></p>
+        <p><a href="#gallery">Gallery</a></p>
+      </div>
+      <div>
+        <h5 style="color:#fff;margin-bottom:12px;font-family:'Space Mono',monospace;">Quick Links</h5>
+        <p><a href="#reserve">Table Reservations</a></p>
+      </div>
+      <div>
+        <h5 style="color:#fff;margin-bottom:12px;font-family:'Space Mono',monospace;">Contact</h5>
+        <p>Baimal Marga, Tejbinayak</p>
+        <p>Kathmandu 44600</p>
+        <p><a href="tel:9744569611">974-4569611</a></p>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <span>© 2026 Brew Butterfly Cafe. All rights reserved.</span>
+      <span>Tejbinayak, Kathmandu</span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"><span id="toast-text">Notification</span></div>
+  <button class="back-top" id="back-top"
+    style="position:fixed;right:24px;bottom:24px;width:46px;height:46px;border-radius:50%;background:var(--ink);color:#fff;border:none;cursor:pointer;z-index:400;display:none;">↑</button>
+
+  <!-- JavaScript Files -->
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/reservation.js"></script>
+</body>
+
+</html>
