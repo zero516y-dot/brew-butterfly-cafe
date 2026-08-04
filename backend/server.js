@@ -72,9 +72,7 @@ const NODE_ENV =
 const REQUIRED_ENV = [
   'DATABASE_URL',
   'JWT_SECRET',
-  'ADMIN_PASSWORD',
-  'SMTP_USER',
-  'SMTP_PASS'
+  'ADMIN_PASSWORD'
 ];
 
 const missing = REQUIRED_ENV.filter(
@@ -84,6 +82,17 @@ const missing = REQUIRED_ENV.filter(
 if (missing.length > 0) {
   throw new Error(
     `[STARTUP] Missing environment variables: ${missing.join(', ')}`
+  );
+}
+
+const hasResend = Boolean(process.env.RESEND_API_KEY);
+const hasSmtp = Boolean(
+  process.env.SMTP_USER && process.env.SMTP_PASS
+);
+
+if (!hasResend && !hasSmtp) {
+  throw new Error(
+    '[STARTUP] Provide RESEND_API_KEY or SMTP_USER/SMTP_PASS for email delivery.'
   );
 }
 
