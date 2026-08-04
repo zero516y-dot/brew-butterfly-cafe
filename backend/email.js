@@ -123,6 +123,51 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+function formatSmtpError(error) {
+  if (!error) {
+   return null;
+  }
+
+  return {
+   name: error.name || 'Error',
+   code: error.code || null,
+   message: error.message || 'Unknown SMTP error',
+   response: error.response || null,
+   responseCode: error.responseCode || null,
+   command: error.command || null,
+   status: error.status || null
+  };
+}
+
+async function getSmtpStatus() {
+  const status = {
+   configured: Boolean(SMTP_USER && SMTP_PASS),
+   smtpUserConfigured: Boolean(SMTP_USER),
+   smtpPassConfigured: Boolean(SMTP_PASS),
+   notifyEmailConfigured: Boolean(NOTIFY_EMAIL),
+   host: SMTP_HOST,
+   port: SMTP_PORT,
+   secure: SMTP_SECURE
+  };
+
+  if (!SMTP_USER || !SMTP_PASS) {
+   status.ready = false;
+   status.error = 'SMTP_USER and SMTP_PASS are required.';
+   return status;
+  }
+
+  try {
+   await transporter.verify();
+   status.ready = true;
+   status.message = 'SMTP connection verified.';
+   return status;
+  } catch (error) {
+   status.ready = false;
+   status.error = formatSmtpError(error);
+   return status;
+  }
+}
+
 /* ==========================================================================
    SEND RESERVATION EMAIL
    ========================================================================== */
@@ -369,5 +414,7 @@ Status: ${reservation.status}
 
 module.exports = {
   sendReservationEmail,
-  verifySmtp
+  verifySmtp,
+  getSmtpStatus,
+  formatSmtpError
 };
