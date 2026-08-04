@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  var BACKEND_URL  = 'http://localhost:3000';
+  var BACKEND_URL  = 'https://brew-butterfly-cafe-1.onrender.com';
   var TOKEN_KEY    = 'bbc_admin_jwt';
 
   function getToken() { return localStorage.getItem(TOKEN_KEY); }
