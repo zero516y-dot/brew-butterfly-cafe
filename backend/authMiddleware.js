@@ -12,11 +12,11 @@ function requireAuth(
   next
 ) {
   try {
-    const header =
+    const authHeader =
       req.headers.authorization || '';
 
     if (
-      !header.startsWith('Bearer ')
+      !authHeader.startsWith('Bearer ')
     ) {
       return res.status(401).json({
         error:
@@ -25,12 +25,25 @@ function requireAuth(
     }
 
     const token =
-      header.substring(7).trim();
+      authHeader
+        .slice(7)
+        .trim();
 
     if (!token) {
       return res.status(401).json({
         error:
           'Authentication token missing.'
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error(
+        '[AUTH] JWT_SECRET is missing.'
+      );
+
+      return res.status(500).json({
+        error:
+          'Authentication service is not configured.'
       });
     }
 
@@ -40,9 +53,20 @@ function requireAuth(
         process.env.JWT_SECRET
       );
 
+    if (
+      !decoded ||
+      !decoded.id ||
+      !decoded.username
+    ) {
+      return res.status(401).json({
+        error:
+          'Invalid authentication token.'
+      });
+    }
+
     req.user = decoded;
 
-    next();
+    return next();
 
   } catch (error) {
     console.error(
@@ -57,6 +81,30 @@ function requireAuth(
   }
 }
 
+function requireAdmin(
+  req,
+  res,
+  next
+) {
+  return requireAuth(
+    req,
+    res,
+    () => {
+      if (
+        req.user.role !== 'admin'
+      ) {
+        return res.status(403).json({
+          error:
+            'Administrator access required.'
+        });
+      }
+
+      return next();
+    }
+  );
+}
+
 module.exports = {
-  requireAuth
+  requireAuth,
+  requireAdmin
 };
