@@ -6,33 +6,50 @@ require('dotenv').config();
 
 const jwt = require('jsonwebtoken');
 
+function getTokenFromRequest(req) {
+  const authHeader = req.headers.authorization || '';
+
+  if (authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7).trim();
+  }
+
+  const cookieHeader = req.headers.cookie || '';
+
+  if (!cookieHeader) {
+    return '';
+  }
+
+  const cookies = Object.fromEntries(
+    cookieHeader
+      .split(';')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .map((entry) => {
+        const separatorIndex = entry.indexOf('=');
+
+        if (separatorIndex === -1) {
+          return [entry, ''];
+        }
+
+        return [entry.slice(0, separatorIndex), entry.slice(separatorIndex + 1)];
+      })
+  );
+
+  return cookies.bbc_admin_token || '';
+}
+
 function requireAuth(
   req,
   res,
   next
 ) {
   try {
-    const authHeader =
-      req.headers.authorization || '';
-
-    if (
-      !authHeader.startsWith('Bearer ')
-    ) {
-      return res.status(401).json({
-        error:
-          'Authentication required.'
-      });
-    }
-
-    const token =
-      authHeader
-        .slice(7)
-        .trim();
+    const token = getTokenFromRequest(req);
 
     if (!token) {
       return res.status(401).json({
         error:
-          'Authentication token missing.'
+          'Authentication required.'
       });
     }
 
@@ -108,3 +125,4 @@ module.exports = {
   requireAuth,
   requireAdmin
 };
+
