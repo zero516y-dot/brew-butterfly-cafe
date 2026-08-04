@@ -18,15 +18,21 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
 const db = require('./db');
+const dbModule = db && typeof db === 'object' ? db : {};
 
 const {
   pool,
-  initDatabase,
+  initDatabase: initDatabaseExport,
   testDatabase,
   reservationHelpers,
   menuHelpers,
   userHelpers
-} = db;
+} = dbModule;
+
+const initDatabase =
+  typeof initDatabaseExport === 'function'
+    ? initDatabaseExport
+    : dbModule.default?.initDatabase;
 
 const {
   sendReservationEmail,
@@ -1342,6 +1348,33 @@ app.use(
    START SERVER
    ========================================================================== */
 
+async function initDatabaseWithRetry() {
+  const maxAttempts = 5;
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+   try {
+     await initDatabase();
+     return;
+   } catch (error) {
+     lastError = error;
+
+     console.error(
+       `[DATABASE] Initialization attempt ${attempt}/${maxAttempts} failed:`,
+       error.message
+     );
+
+     if (attempt === maxAttempts) {
+       throw lastError;
+     }
+
+     await new Promise(resolve => {
+       setTimeout(resolve, 3000);
+     });
+   }
+  }
+}
+
 async function startServer() {
   console.log('');
   console.log('🦋 Brew Butterfly Cafe Backend');
@@ -1353,18 +1386,26 @@ async function startServer() {
        ---------------------------------------------------------------------- */
 
     if (typeof initDatabase !== 'function') {
+      const exportedKeys = Object.keys(dbModule || {})
+        .filter(key => key !== 'default')
+        .sort();
+
       throw new Error(
-        'Database module error: initDatabase is not exported from ./db.js'
+        `Database module error: initDatabase is not exported from ./db.js (exports: ${exportedKeys.join(', ') || 'none'})`
       );
     }
 
     if (!pool) {
+      const exportedKeys = Object.keys(dbModule || {})
+        .filter(key => key !== 'default')
+        .sort();
+
       throw new Error(
-        'Database module error: PostgreSQL pool is not exported from ./db.js'
+        `Database module error: PostgreSQL pool is not exported from ./db.js (exports: ${exportedKeys.join(', ') || 'none'})`
       );
     }
 
-    await initDatabase();
+    await initDatabaseWithRetry();
 
     console.log(
       '   → Database connected'
