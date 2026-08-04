@@ -20,11 +20,21 @@ const NOTIFY_EMAIL =
   process.env.NOTIFY_EMAIL ||
   SMTP_USER;
 
-if (!SMTP_USER || !SMTP_PASS) {
+if (!SMTP_USER) {
   console.warn(
-    '[SMTP] SMTP_USER or SMTP_PASS is missing.'
+    '[SMTP] SMTP_USER is missing.'
   );
 }
+
+if (!SMTP_PASS) {
+  console.warn(
+    '[SMTP] SMTP_PASS is missing.'
+  );
+}
+
+/* ==========================================================================
+   TRANSPORTER
+   ========================================================================== */
 
 const transporter =
   nodemailer.createTransport({
@@ -38,12 +48,15 @@ const transporter =
 
     secure:
       String(
-        process.env.SMTP_SECURE || 'true'
+        process.env.SMTP_SECURE ?? 'true'
       ).toLowerCase() === 'true',
 
     auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS
+      user:
+        SMTP_USER,
+
+      pass:
+        SMTP_PASS
     },
 
     connectionTimeout: 15000,
@@ -74,172 +87,206 @@ async function verifySmtp() {
 }
 
 /* ==========================================================================
-   RESERVATION EMAIL
+   ESCAPE HTML
+   ========================================================================== */
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/* ==========================================================================
+   SEND RESERVATION EMAIL
    ========================================================================== */
 
 async function sendReservationEmail(
   reservation
 ) {
+  if (!SMTP_USER || !SMTP_PASS) {
+    throw new Error(
+      'SMTP configuration is incomplete.'
+    );
+  }
+
+  if (!NOTIFY_EMAIL) {
+    throw new Error(
+      'NOTIFY_EMAIL is missing.'
+    );
+  }
+
   const subject =
     `🦋 New Table Reservation — ${reservation.id}`;
 
   const html = `
-    <!DOCTYPE html>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>New Reservation</title>
+</head>
 
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>New Reservation</title>
-      </head>
+<body
+  style="
+    margin:0;
+    padding:0;
+    background:#f5f5f5;
+    font-family:Arial,sans-serif;
+  "
+>
 
-      <body
+  <div
+    style="
+      max-width:650px;
+      margin:30px auto;
+      background:#ffffff;
+      border-radius:14px;
+      overflow:hidden;
+      box-shadow:0 5px 20px rgba(0,0,0,.08);
+    "
+  >
+
+    <div
+      style="
+        padding:25px;
+        background:#111111;
+        color:#ffffff;
+        text-align:center;
+      "
+    >
+      <h1 style="margin:0;">
+        🦋 Brew Butterfly Cafe
+      </h1>
+
+      <p style="margin:8px 0 0;">
+        New Reservation
+      </p>
+    </div>
+
+    <div style="padding:30px;">
+
+      <h2>
+        Reservation ${escapeHtml(
+          reservation.id
+        )}
+      </h2>
+
+      <table
         style="
-          margin:0;
-          padding:0;
-          background:#f5f5f5;
-          font-family:Arial,sans-serif;
+          width:100%;
+          border-collapse:collapse;
         "
       >
 
-        <div
-          style="
-            max-width:650px;
-            margin:30px auto;
-            background:white;
-            border-radius:14px;
-            overflow:hidden;
-            box-shadow:0 5px 20px rgba(0,0,0,.08);
-          "
-        >
+        <tr>
+          <td style="padding:10px 0;">
+            <strong>Guest</strong>
+          </td>
 
-          <div
-            style="
-              padding:25px;
-              background:#111;
-              color:white;
-              text-align:center;
-            "
-          >
-            <h1 style="margin:0;">
-              🦋 Brew Butterfly Cafe
-            </h1>
+          <td style="padding:10px 0;">
+            ${escapeHtml(reservation.name)}
+          </td>
+        </tr>
 
-            <p style="margin:8px 0 0;">
-              New Reservation
-            </p>
-          </div>
+        <tr>
+          <td style="padding:10px 0;">
+            <strong>Phone</strong>
+          </td>
 
-          <div style="padding:30px;">
+          <td style="padding:10px 0;">
+            ${escapeHtml(reservation.phone)}
+          </td>
+        </tr>
 
-            <h2>
-              Reservation ${reservation.id}
-            </h2>
+        <tr>
+          <td style="padding:10px 0;">
+            <strong>Guests</strong>
+          </td>
 
-            <table
-              style="
-                width:100%;
-                border-collapse:collapse;
-              "
-            >
+          <td style="padding:10px 0;">
+            ${escapeHtml(reservation.guests)}
+          </td>
+        </tr>
 
-              <tr>
-                <td style="padding:10px 0;">
-                  <strong>Guest</strong>
-                </td>
+        <tr>
+          <td style="padding:10px 0;">
+            <strong>Date</strong>
+          </td>
 
-                <td style="padding:10px 0;">
-                  ${escapeHtml(reservation.name)}
-                </td>
-              </tr>
+          <td style="padding:10px 0;">
+            ${escapeHtml(reservation.date)}
+          </td>
+        </tr>
 
-              <tr>
-                <td style="padding:10px 0;">
-                  <strong>Phone</strong>
-                </td>
+        <tr>
+          <td style="padding:10px 0;">
+            <strong>Time</strong>
+          </td>
 
-                <td style="padding:10px 0;">
-                  ${escapeHtml(reservation.phone)}
-                </td>
-              </tr>
+          <td style="padding:10px 0;">
+            ${escapeHtml(reservation.time)}
+          </td>
+        </tr>
 
-              <tr>
-                <td style="padding:10px 0;">
-                  <strong>Guests</strong>
-                </td>
+        <tr>
+          <td style="padding:10px 0;">
+            <strong>Occasion</strong>
+          </td>
 
-                <td style="padding:10px 0;">
-                  ${reservation.guests}
-                </td>
-              </tr>
+          <td style="padding:10px 0;">
+            ${escapeHtml(reservation.occasion)}
+          </td>
+        </tr>
 
-              <tr>
-                <td style="padding:10px 0;">
-                  <strong>Date</strong>
-                </td>
+        <tr>
+          <td style="padding:10px 0;">
+            <strong>Notes</strong>
+          </td>
 
-                <td style="padding:10px 0;">
-                  ${escapeHtml(reservation.date)}
-                </td>
-              </tr>
+          <td style="padding:10px 0;">
+            ${escapeHtml(
+              reservation.notes || 'None'
+            )}
+          </td>
+        </tr>
 
-              <tr>
-                <td style="padding:10px 0;">
-                  <strong>Time</strong>
-                </td>
+        <tr>
+          <td style="padding:10px 0;">
+            <strong>Status</strong>
+          </td>
 
-                <td style="padding:10px 0;">
-                  ${escapeHtml(reservation.time)}
-                </td>
-              </tr>
+          <td style="padding:10px 0;">
+            <strong>
+              ${escapeHtml(reservation.status)}
+            </strong>
+          </td>
+        </tr>
 
-              <tr>
-                <td style="padding:10px 0;">
-                  <strong>Occasion</strong>
-                </td>
+      </table>
 
-                <td style="padding:10px 0;">
-                  ${escapeHtml(reservation.occasion)}
-                </td>
-              </tr>
+      <hr
+        style="
+          margin:25px 0;
+          border:0;
+          border-top:1px solid #ddd;
+        "
+      >
 
-              <tr>
-                <td style="padding:10px 0;">
-                  <strong>Notes</strong>
-                </td>
+      <p style="color:#666;">
+        This notification was generated automatically
+        by the Brew Butterfly Cafe reservation system.
+      </p>
 
-                <td style="padding:10px 0;">
-                  ${escapeHtml(reservation.notes || 'None')}
-                </td>
-              </tr>
+    </div>
 
-              <tr>
-                <td style="padding:10px 0;">
-                  <strong>Status</strong>
-                </td>
+  </div>
 
-                <td style="padding:10px 0;">
-                  <strong>
-                    ${escapeHtml(reservation.status)}
-                  </strong>
-                </td>
-              </tr>
-
-            </table>
-
-            <hr style="margin:25px 0;border:0;border-top:1px solid #ddd;">
-
-            <p style="color:#666;">
-              This notification was generated automatically
-              by the Brew Butterfly Cafe reservation system.
-            </p>
-
-          </div>
-
-        </div>
-
-      </body>
-    </html>
-  `;
+</body>
+</html>
+`;
 
   const text = `
 Brew Butterfly Cafe — New Reservation
@@ -262,6 +309,8 @@ Status: ${reservation.status}
 
       to: NOTIFY_EMAIL,
 
+      replyTo: SMTP_USER,
+
       subject,
 
       text,
@@ -277,19 +326,6 @@ Status: ${reservation.status}
     success: true,
     messageId: info.messageId
   };
-}
-
-/* ==========================================================================
-   HTML ESCAPE
-   ========================================================================== */
-
-function escapeHtml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 /* ==========================================================================
