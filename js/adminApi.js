@@ -41,13 +41,18 @@
   function checkAuth() {
     var token = getToken();
     var user  = localStorage.getItem(USER_KEY) || 'Tejbinayak Manager';
-
+ 
     if (token) {
       if (loginOverlay) loginOverlay.classList.add('hide');
       if (userLabel) userLabel.textContent = user;
       checkBackendHealth();
     } else {
       if (loginOverlay) loginOverlay.classList.remove('hide');
+      if (userLabel) userLabel.textContent = 'Guest';
+      if (statusBadge) {
+        statusBadge.className = 'backend-badge offline';
+        statusBadge.innerHTML = '<span class="dot"></span> Sign in to access admin';
+      }
     }
   }
 
@@ -58,12 +63,15 @@
         if (res.ok && statusBadge) {
           statusBadge.className = 'backend-badge online';
           statusBadge.innerHTML = '<span class="dot"></span> Backend Online';
+        } else if (statusBadge) {
+          statusBadge.className = 'backend-badge offline';
+          statusBadge.innerHTML = '<span class="dot"></span> Backend unavailable';
         }
       })
       .catch(function () {
         if (statusBadge) {
           statusBadge.className = 'backend-badge offline';
-          statusBadge.innerHTML = '<span class="dot"></span> Backend Offline (Local Mode)';
+          statusBadge.innerHTML = '<span class="dot"></span> Backend unavailable';
         }
       });
   }
@@ -74,16 +82,16 @@
       e.preventDefault();
       var username = (document.getElementById('login-username') || {}).value || '';
       var password = (document.getElementById('login-password') || {}).value || '';
-
+ 
       if (!username || !password) {
         showError('Please enter both username and password.');
         return;
       }
-
+ 
       var loginBtn = document.getElementById('login-btn');
       if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'Verifying...'; }
       hideError();
-
+ 
       fetch(BACKEND_URL + '/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,17 +104,14 @@
           });
         })
         .then(function (data) {
-          setSession(data.token, data.username);
+          if (!data || !data.token) {
+            throw new Error('Authentication failed.');
+          }
+          setSession(data.token, data.username || username);
           checkAuth();
         })
         .catch(function (err) {
-          // Fallback check for local offline mode if backend isn't running
-          if (username === 'admin' && password === 'BrewButterfly@2026') {
-            setSession('local-token-offline', 'admin');
-            checkAuth();
-          } else {
-            showError(err.message || 'Invalid username or password.');
-          }
+          showError(err.message || 'Invalid username or password.');
         })
         .finally(function () {
           if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
@@ -131,6 +136,15 @@
       clearSession();
       checkAuth();
     });
+  }
+
+  function requireAuth() {
+    if (!getToken()) {
+      if (loginOverlay) {
+        loginOverlay.classList.remove('hide');
+      }
+      throw new Error('Please sign in to access the admin dashboard.');
+    }
   }
 
   /* ---------- CHANGE PASSWORD HANDLER ---------- */
@@ -209,7 +223,6 @@
 
       fetch(BACKEND_URL + '/api/admin/reservations', {
         headers: { 'Authorization': 'Bearer ' + token }
-         
       })
         .then(function (r) { return r.json(); })
         .then(function (items) {
