@@ -497,6 +497,58 @@ app.get(
 );
 
 /* ==========================================================================
+   ADMIN AUTH HELPERS
+   ========================================================================== */
+
+function sanitizeLoginInput(value, fieldName) {
+  if (typeof value !== 'string') {
+   throw new Error(`${fieldName} must be a string.`);
+  }
+
+  const normalized = value
+   .trim()
+   .slice(0, 100)
+   .replace(/[\u0000-\u001F\u007F]/g, '');
+
+  if (!normalized) {
+   throw new Error(`${fieldName} is required.`);
+  }
+
+  if (!/^[a-zA-Z0-9._@-]{1,100}$/.test(normalized)) {
+   throw new Error(`${fieldName} contains invalid characters.`);
+  }
+
+  return normalized;
+}
+
+function setAuthCookie(res, token) {
+  res.cookie('bbc_admin_token', token, {
+   httpOnly: true,
+   secure: NODE_ENV === 'production',
+   sameSite: 'lax',
+   maxAge: 8 * 60 * 60 * 1000
+  });
+}
+
+/* ==========================================================================
+   ADMIN SESSION
+   ========================================================================== */
+
+app.get(
+  '/api/admin/session',
+  requireAuth,
+  (req, res) => {
+   return res.json({
+     authenticated: true,
+     user: {
+       username: req.user.username,
+       role: req.user.role
+      }
+   });
+  }
+);
+
+/* ==========================================================================
    ADMIN LOGIN
    ========================================================================== */
 
@@ -504,84 +556,102 @@ app.post(
   '/api/admin/login',
   loginLimiter,
   async (req, res) => {
-    try {
-      const {
-        username,
-        password
-      } = req.body;
+   try {
+     const username = sanitizeLoginInput(req.body?.username, 'Username');
+     const password = typeof req.body?.password === 'string'
+       ? req.body.password
+       : '';
 
-      if (
-        !username ||
-        !password
-      ) {
-        return res.status(400).json({
-          error:
-            'Username and password required.'
-        });
-      }
+     if (!password || password.length > 256) {
+       return res.status(400).json({
+         error:
+           'Password must be between 1 and 256 characters.'
+       });
+     }
 
-      const user =
-        await userHelpers.findByUsername(
-          username
-        );
+     const user =
+       await userHelpers.findByUsername(
+         username.toLowerCase()
+       );
 
-      if (!user) {
-        return res.status(401).json({
-          error:
-            'Invalid credentials.'
-        });
-      }
+     if (!user) {
+       return res.status(401).json({
+         error:
+           'Invalid credentials.'
+       });
+     }
 
-      const valid =
-        await userHelpers.validatePassword(
-          password,
-          user.password_hash
-        );
+     const valid =
+       await userHelpers.validatePassword(
+         password,
+         user.password_hash
+       );
 
-      if (!valid) {
-        return res.status(401).json({
-          error:
-            'Invalid credentials.'
-        });
-      }
+     if (!valid) {
+       return res.status(401).json({
+         error:
+           'Invalid credentials.'
+       });
+     }
 
-      const token =
-        jwt.sign(
-          {
-            id: user.id,
-            username: user.username,
-            role: user.role
-          },
+     const token =
+       jwt.sign(
+         {
+           id: user.id,
+           username: user.username,
+           role: user.role
+         },
 
-          process.env.JWT_SECRET,
+         process.env.JWT_SECRET,
 
-          {
-            expiresIn:
-              process.env.JWT_EXPIRES_IN ||
-              '8h'
-          }
-        );
+         {
+           expiresIn:
+             process.env.JWT_EXPIRES_IN ||
+             '8h'
+         }
+       );
 
-      return res.json({
-        token,
+     setAuthCookie(res, token);
 
-        username:
-          user.username,
+     return res.json({
+       token,
 
-        role:
-          user.role
-      });
-    } catch (error) {
-      console.error(
-        '[LOGIN]',
-        error
-      );
+       username:
+         user.username,
 
-      return res.status(500).json({
-        error:
-          'Login failed. Please try again.'
-      });
-    }
+       role:
+         user.role
+     });
+   } catch (error) {
+     console.error(
+       '[LOGIN]',
+       error
+     );
+
+     return res.status(400).json({
+       error:
+         error.message || 'Login failed. Please try again.'
+     });
+   }
+  }
+);
+
+/* ==========================================================================
+   ADMIN LOGOUT
+   ========================================================================== */
+
+app.post(
+  '/api/admin/logout',
+  (req, res) => {
+   res.clearCookie('bbc_admin_token', {
+     httpOnly: true,
+     secure: NODE_ENV === 'production',
+     sameSite: 'lax'
+   });
+
+   return res.json({
+     success: true
+   });
   }
 );
 
