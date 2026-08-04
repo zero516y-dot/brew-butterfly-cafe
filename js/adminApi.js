@@ -30,37 +30,84 @@
   }
 
   function setSession(token, username) {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, username);
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+    localStorage.setItem(USER_KEY, username || 'Tejbinayak Manager');
   }
 
   function clearSession() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    window.__bbcAdminAuthenticated = false;
   }
 
-  /* ---------- UPDATE UI STATE ---------- */
-  function checkAuth() {
-    var token = getToken();
-    var user  = localStorage.getItem(USER_KEY) || 'Tejbinayak Manager';
- 
-    if (token) {
-      if (loginOverlay) loginOverlay.classList.add('hide');
-      if (userLabel) userLabel.textContent = user;
-      checkBackendHealth();
-    } else {
-      if (loginOverlay) loginOverlay.classList.remove('hide');
-      if (userLabel) userLabel.textContent = 'Guest';
-      if (statusBadge) {
+  function setAuthUI(isAuthenticated, userName) {
+    var user = userName || localStorage.getItem(USER_KEY) || 'Tejbinayak Manager';
+    var shouldShowOverlay = !isAuthenticated;
+
+    if (loginOverlay) {
+      loginOverlay.classList.toggle('hide', isAuthenticated);
+    }
+
+    if (userLabel) {
+      userLabel.textContent = isAuthenticated ? user : 'Guest';
+    }
+
+    document.body.classList.toggle('admin-authenticated', isAuthenticated);
+    document.body.classList.toggle('admin-unauthenticated', !isAuthenticated);
+    window.__bbcAdminAuthenticated = isAuthenticated;
+    window.__bbcAdminUser = user;
+
+    if (statusBadge) {
+      if (isAuthenticated) {
+        statusBadge.className = 'backend-badge online';
+        statusBadge.innerHTML = '<span class="dot"></span> Logged in';
+      } else {
         statusBadge.className = 'backend-badge offline';
         statusBadge.innerHTML = '<span class="dot"></span> Sign in to access admin';
       }
     }
+
+    if (isAuthenticated && window.dispatchEvent) {
+      window.dispatchEvent(new Event('admin-auth-state-changed'));
+    }
+
+    return shouldShowOverlay;
+  }
+
+  /* ---------- UPDATE UI STATE ---------- */
+  function checkAuth() {
+    var storedUser = localStorage.getItem(USER_KEY) || 'Tejbinayak Manager';
+
+    fetch(BACKEND_URL + '/api/admin/session', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' }
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error('unauthenticated');
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        var user = data && data.user && data.user.username ? data.user.username : storedUser;
+        setAuthUI(true, user);
+        checkBackendHealth();
+      })
+      .catch(function () {
+        setAuthUI(false, storedUser);
+      });
   }
 
   /* ---------- CHECK BACKEND HEALTH ---------- */
   function checkBackendHealth() {
-    fetch(BACKEND_URL + '/api/csrf-token')
+    fetch(BACKEND_URL + '/api/csrf-token', {
+      credentials: 'include',
+      headers: { Accept: 'application/json' }
+    })
       .then(function (res) {
         if (res.ok && statusBadge) {
           statusBadge.className = 'backend-badge online';
@@ -96,7 +143,11 @@
  
       fetch(BACKEND_URL + '/api/admin/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ username: username, password: password })
       })
         .then(function (res) {
@@ -135,8 +186,14 @@
   /* ---------- LOGOUT HANDLER ---------- */
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function () {
-      clearSession();
-      checkAuth();
+      fetch(BACKEND_URL + '/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Accept: 'application/json' }
+      }).finally(function () {
+        clearSession();
+        checkAuth();
+      });
     });
   }
 
@@ -161,8 +218,10 @@
 
       fetch(BACKEND_URL + '/api/admin/change-password', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': 'Bearer ' + token
         },
         body: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword })
@@ -197,8 +256,10 @@
 
       fetch(BACKEND_URL + '/api/admin/menu/sync', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': 'Bearer ' + token
         },
         body: JSON.stringify(menu)
@@ -224,7 +285,11 @@
       if (!token) return;
 
       fetch(BACKEND_URL + '/api/admin/reservations', {
-        headers: { 'Authorization': 'Bearer ' + token }
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' + token
+        }
       })
         .then(function (r) { return r.json(); })
         .then(function (items) {
