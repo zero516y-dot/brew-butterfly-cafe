@@ -36,7 +36,8 @@ const initDatabase =
 
 const {
   sendReservationEmail,
-  verifySmtp
+  verifySmtp,
+  getSmtpStatus
 } = require('./email');
 
 const {
@@ -637,6 +638,23 @@ app.post(
 );
 
 /* ==========================================================================
+   SMTP DIAGNOSTICS
+   ========================================================================== */
+
+app.get('/api/debug/smtp', async (req, res) => {
+  try {
+   const status = await getSmtpStatus();
+   return res.json(status);
+  } catch (error) {
+   console.error('[SMTP DEBUG]', error);
+   return res.status(500).json({
+     ready: false,
+     error: error.message || 'SMTP diagnostics failed.'
+   });
+  }
+});
+
+/* ==========================================================================
    CREATE RESERVATION
    ========================================================================== */
 
@@ -814,6 +832,10 @@ app.post(
       console.error(
         '[RESERVE] Email failed:',
        error.message || error
+      );
+      console.error(
+       '[RESERVE] SMTP details:',
+       error.response || error.responseCode || error.code || error.command || null
       );
     }
 
