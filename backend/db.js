@@ -1,6 +1,6 @@
 /* ==========================================================================
-   BREW BUTTERFLY CAFE — POSTGRESQL DATABASE
-   PostgreSQL + Render
+   BREW BUTTERFLY CAFE — PostgreSQL DATABASE
+   Render PostgreSQL + node-postgres
    ========================================================================== */
 
 require('dotenv').config();
@@ -12,12 +12,25 @@ const crypto = require('crypto');
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error('[DATABASE] DATABASE_URL is missing.');
-  process.exit(1);
+  throw new Error('[DATABASE] DATABASE_URL is missing.');
 }
 
-const useSSL =
-  String(process.env.DATABASE_SSL || 'false').toLowerCase() === 'true';
+function envBoolean(value, defaultValue = false) {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+
+  return String(value).toLowerCase() === 'true';
+}
+
+const isProduction =
+  String(process.env.NODE_ENV || 'development').toLowerCase() ===
+  'production';
+
+const useSSL = envBoolean(
+  process.env.DATABASE_SSL,
+  isProduction
+);
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -28,7 +41,10 @@ const pool = new Pool({
       }
     : false,
 
-  max: Number(process.env.DB_POOL_MAX || 10),
+  max: Math.max(
+    1,
+    Number(process.env.DB_POOL_MAX || 10)
+  ),
 
   idleTimeoutMillis: 30000,
 
@@ -36,7 +52,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (error) => {
-  console.error('[DATABASE] Unexpected pool error:', error);
+  console.error('[DATABASE] Unexpected PostgreSQL pool error:', error);
 });
 
 /* ==========================================================================
@@ -47,6 +63,26 @@ function makeId(prefix) {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
+function cleanString(value, maxLength = 500) {
+  return String(value ?? '')
+    .trim()
+    .slice(0, maxLength);
+}
+
+/* ==========================================================================
+   TEST DATABASE
+   ========================================================================== */
+
+async function testDatabase() {
+  const result = await pool.query(`
+    SELECT
+      NOW() AS now,
+      current_database() AS database
+  `);
+
+  return result.rows[0];
+}
+
 /* ==========================================================================
    INITIALIZE DATABASE
    ========================================================================== */
@@ -55,6 +91,8 @@ async function initDatabase() {
   const client = await pool.connect();
 
   try {
+    console.log('[DATABASE] Initializing PostgreSQL...');
+
     await client.query('BEGIN');
 
     /* ----------------------------------------------------------------------
@@ -93,6 +131,20 @@ async function initDatabase() {
       )
     `);
 
+    /*
+     * These make the database compatible with an older installation
+     * where the table may already exist.
+     */
+    await client.query(`
+      ALTER TABLE reservations
+      ADD COLUMN IF NOT EXISTS email_sent BOOLEAN NOT NULL DEFAULT FALSE
+    `);
+
+    await client.query(`
+      ALTER TABLE reservations
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    `);
+
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_reservations_date
       ON reservations(date)
@@ -129,6 +181,41 @@ async function initDatabase() {
     `);
 
     await client.query(`
+      ALTER TABLE menu_items
+      ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT ''
+    `);
+
+    await client.query(`
+      ALTER TABLE menu_items
+      ADD COLUMN IF NOT EXISTS photo TEXT NOT NULL DEFAULT ''
+    `);
+
+    await client.query(`
+      ALTER TABLE menu_items
+      ADD COLUMN IF NOT EXISTS veg BOOLEAN NOT NULL DEFAULT FALSE
+    `);
+
+    await client.query(`
+      ALTER TABLE menu_items
+      ADD COLUMN IF NOT EXISTS featured BOOLEAN NOT NULL DEFAULT FALSE
+    `);
+
+    await client.query(`
+      ALTER TABLE menu_items
+      ADD COLUMN IF NOT EXISTS in_stock BOOLEAN NOT NULL DEFAULT TRUE
+    `);
+
+    await client.query(`
+      ALTER TABLE menu_items
+      ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    `);
+
+    await client.query(`
+      ALTER TABLE menu_items
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    `);
+
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_menu_category
       ON menu_items(cat)
     `);
@@ -139,37 +226,43 @@ async function initDatabase() {
     `);
 
     /* ----------------------------------------------------------------------
-       DEFAULT ADMIN
+       ADMIN USER
        ---------------------------------------------------------------------- */
 
-    const adminUsername =
-      String(process.env.ADMIN_USERNAME || 'admin')
-        .trim()
-        .toLowerCase();
+    const adminUsername = cleanString(
+      process.env.ADMIN_USERNAME || 'admin',
+      100
+    ).toLowerCase();
 
-    const adminPassword =
-      process.env.ADMIN_PASSWORD;
+    const adminPassword = process.env.ADMIN_PASSWORD;
 
-    if (!adminPassword || adminPassword.length < 8) {
+    if (!adminPassword) {
       throw new Error(
-        'ADMIN_PASSWORD must exist and contain at least 8 characters.'
+        '[DATABASE] ADMIN_PASSWORD is missing.'
       );
     }
 
-    const existingAdmin =
-      await client.query(
-        `
-          SELECT id
-          FROM users
-          WHERE username = $1
-          LIMIT 1
-        `,
-        [adminUsername]
+    if (adminPassword.length < 8) {
+      throw new Error(
+        '[DATABASE] ADMIN_PASSWORD must contain at least 8 characters.'
       );
+    }
+
+    const existingAdmin = await client.query(
+      `
+        SELECT id
+        FROM users
+        WHERE username = $1
+        LIMIT 1
+      `,
+      [adminUsername]
+    );
 
     if (existingAdmin.rowCount === 0) {
-      const passwordHash =
-        await bcrypt.hash(adminPassword, 12);
+      const passwordHash = await bcrypt.hash(
+        adminPassword,
+        12
+      );
 
       await client.query(
         `
@@ -190,14 +283,21 @@ async function initDatabase() {
       );
 
       console.log(
-        `[DATABASE] Admin user "${adminUsername}" created.`
+        `[DATABASE] Admin "${adminUsername}" created.`
+      );
+    } else {
+      console.log(
+        `[DATABASE] Admin "${adminUsername}" already exists.`
       );
     }
 
     await client.query('COMMIT');
 
-    console.log('[DATABASE] PostgreSQL initialized successfully.');
+    console.log(
+      '[DATABASE] PostgreSQL initialized successfully.'
+    );
 
+    return true;
   } catch (error) {
     await client.query('ROLLBACK');
 
@@ -207,21 +307,9 @@ async function initDatabase() {
     );
 
     throw error;
-
   } finally {
     client.release();
   }
-}
-
-/* ==========================================================================
-   DATABASE TEST
-   ========================================================================== */
-
-async function testDatabase() {
-  const result =
-    await pool.query('SELECT NOW() AS now');
-
-  return result.rows[0];
 }
 
 /* ==========================================================================
@@ -229,54 +317,96 @@ async function testDatabase() {
    ========================================================================== */
 
 const reservationHelpers = {
-
   async create(reservation) {
-    const result =
-      await pool.query(
-        `
-          INSERT INTO reservations (
-            id,
-            name,
-            phone,
-            guests,
-            date,
-            time,
-            occasion,
-            notes,
-            status
-          )
-          VALUES (
-            $1,
-            $2,
-            $3,
-            $4,
-            $5,
-            $6,
-            $7,
-            $8,
-            $9
-          )
-          RETURNING *
-        `,
-        [
-          reservation.id,
-          reservation.name,
-          reservation.phone,
-          reservation.guests,
-          reservation.date,
-          reservation.time,
-          reservation.occasion,
-          reservation.notes || '',
-          reservation.status || 'Pending'
-        ]
-      );
+    const result = await pool.query(
+      `
+        INSERT INTO reservations (
+          id,
+          name,
+          phone,
+          guests,
+          date,
+          time,
+          occasion,
+          notes,
+          status
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4,
+          $5,
+          $6,
+          $7,
+          $8,
+          $9
+        )
+        RETURNING *
+      `,
+      [
+        reservation.id,
+        cleanString(reservation.name, 200),
+        cleanString(reservation.phone, 50),
+        reservation.guests,
+        reservation.date,
+        cleanString(reservation.time, 100),
+        cleanString(
+          reservation.occasion || 'Regular Visit',
+          200
+        ),
+        cleanString(reservation.notes || '', 500),
+        reservation.status || 'Pending'
+      ]
+    );
 
     return result.rows[0];
   },
 
   async getAll() {
-    const result =
-      await pool.query(`
+    const result = await pool.query(`
+      SELECT
+        id,
+        name,
+        phone,
+        guests,
+        TO_CHAR(date, 'YYYY-MM-DD') AS date,
+        time,
+        occasion,
+        notes,
+        status,
+        email_sent AS "emailSent",
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM reservations
+      ORDER BY date ASC, time ASC, created_at DESC
+    `);
+
+    return result.rows;
+  },
+
+  async count() {
+    const result = await pool.query(`
+      SELECT COUNT(*)::INTEGER AS count
+      FROM reservations
+    `);
+
+    return result.rows[0].count;
+  },
+
+  async countPending() {
+    const result = await pool.query(`
+      SELECT COUNT(*)::INTEGER AS count
+      FROM reservations
+      WHERE status = 'Pending'
+    `);
+
+    return result.rows[0].count;
+  },
+
+  async getById(id) {
+    const result = await pool.query(
+      `
         SELECT
           id,
           name,
@@ -291,99 +421,52 @@ const reservationHelpers = {
           created_at AS "createdAt",
           updated_at AS "updatedAt"
         FROM reservations
-        ORDER BY date ASC, time ASC, created_at DESC
-      `);
-
-    return result.rows;
-  },
-
-  async count() {
-    const result =
-      await pool.query(`
-        SELECT COUNT(*)::INTEGER AS count
-        FROM reservations
-      `);
-
-    return result.rows[0].count;
-  },
-
-  async countPending() {
-    const result =
-      await pool.query(`
-        SELECT COUNT(*)::INTEGER AS count
-        FROM reservations
-        WHERE status = 'Pending'
-      `);
-
-    return result.rows[0].count;
-  },
-
-  async getById(id) {
-    const result =
-      await pool.query(
-        `
-          SELECT
-            id,
-            name,
-            phone,
-            guests,
-            TO_CHAR(date, 'YYYY-MM-DD') AS date,
-            time,
-            occasion,
-            notes,
-            status,
-            email_sent AS "emailSent",
-            created_at AS "createdAt",
-            updated_at AS "updatedAt"
-          FROM reservations
-          WHERE id = $1
-          LIMIT 1
-        `,
-        [id]
-      );
+        WHERE id = $1
+        LIMIT 1
+      `,
+      [id]
+    );
 
     return result.rows[0] || null;
   },
 
   async updateStatus(id, status) {
-    const result =
-      await pool.query(
-        `
-          UPDATE reservations
-          SET
-            status = $2,
-            updated_at = NOW()
-          WHERE id = $1
-          RETURNING
-            id,
-            name,
-            phone,
-            guests,
-            TO_CHAR(date, 'YYYY-MM-DD') AS date,
-            time,
-            occasion,
-            notes,
-            status,
-            email_sent AS "emailSent",
-            created_at AS "createdAt",
-            updated_at AS "updatedAt"
-        `,
-        [id, status]
-      );
+    const result = await pool.query(
+      `
+        UPDATE reservations
+        SET
+          status = $2,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING
+          id,
+          name,
+          phone,
+          guests,
+          TO_CHAR(date, 'YYYY-MM-DD') AS date,
+          time,
+          occasion,
+          notes,
+          status,
+          email_sent AS "emailSent",
+          created_at AS "createdAt",
+          updated_at AS "updatedAt"
+      `,
+      [id, status]
+    );
 
     return result.rows[0] || null;
   },
 
   async delete(id) {
-    const result =
-      await pool.query(
-        `
-          DELETE FROM reservations
-          WHERE id = $1
-          RETURNING id
-        `,
-        [id]
-      );
+    const result = await pool.query(
+      `
+        DELETE FROM reservations
+        WHERE id = $1
+        RETURNING id
+      `,
+      [id]
+    );
 
     return {
       success: result.rowCount > 0,
@@ -392,18 +475,17 @@ const reservationHelpers = {
   },
 
   async markEmailSent(id) {
-    const result =
-      await pool.query(
-        `
-          UPDATE reservations
-          SET
-            email_sent = TRUE,
-            updated_at = NOW()
-          WHERE id = $1
-          RETURNING id
-        `,
-        [id]
-      );
+    const result = await pool.query(
+      `
+        UPDATE reservations
+        SET
+          email_sent = TRUE,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING id
+      `,
+      [id]
+    );
 
     return result.rows[0] || null;
   }
@@ -414,10 +496,30 @@ const reservationHelpers = {
    ========================================================================== */
 
 const menuHelpers = {
-
   async getAll() {
-    const result =
-      await pool.query(`
+    const result = await pool.query(`
+      SELECT
+        id,
+        cat,
+        name,
+        price::FLOAT AS price,
+        description AS "desc",
+        photo,
+        veg,
+        featured,
+        in_stock AS "inStock",
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM menu_items
+      ORDER BY cat ASC, name ASC
+    `);
+
+    return result.rows;
+  },
+
+  async getById(id) {
+    const result = await pool.query(
+      `
         SELECT
           id,
           cat,
@@ -431,44 +533,20 @@ const menuHelpers = {
           created_at AS "createdAt",
           updated_at AS "updatedAt"
         FROM menu_items
-        ORDER BY cat ASC, name ASC
-      `);
-
-    return result.rows;
-  },
-
-  async getById(id) {
-    const result =
-      await pool.query(
-        `
-          SELECT
-            id,
-            cat,
-            name,
-            price::FLOAT AS price,
-            description AS "desc",
-            photo,
-            veg,
-            featured,
-            in_stock AS "inStock",
-            created_at AS "createdAt",
-            updated_at AS "updatedAt"
-          FROM menu_items
-          WHERE id = $1
-          LIMIT 1
-        `,
-        [id]
-      );
+        WHERE id = $1
+        LIMIT 1
+      `,
+      [id]
+    );
 
     return result.rows[0] || null;
   },
 
   async count() {
-    const result =
-      await pool.query(`
-        SELECT COUNT(*)::INTEGER AS count
-        FROM menu_items
-      `);
+    const result = await pool.query(`
+      SELECT COUNT(*)::INTEGER AS count
+      FROM menu_items
+    `);
 
     return result.rows[0].count;
   },
@@ -478,105 +556,106 @@ const menuHelpers = {
       item.id ||
       makeId('menu');
 
-    const result =
-      await pool.query(
-        `
-          INSERT INTO menu_items (
-            id,
-            cat,
-            name,
-            price,
-            description,
-            photo,
-            veg,
-            featured,
-            in_stock
-          )
-          VALUES (
-            $1,
-            $2,
-            $3,
-            $4,
-            $5,
-            $6,
-            $7,
-            $8,
-            $9
-          )
-          ON CONFLICT (id)
-          DO UPDATE SET
-            cat = EXCLUDED.cat,
-            name = EXCLUDED.name,
-            price = EXCLUDED.price,
-            description = EXCLUDED.description,
-            photo = EXCLUDED.photo,
-            veg = EXCLUDED.veg,
-            featured = EXCLUDED.featured,
-            in_stock = EXCLUDED.in_stock,
-            updated_at = NOW()
-          RETURNING
-            id,
-            cat,
-            name,
-            price::FLOAT AS price,
-            description AS "desc",
-            photo,
-            veg,
-            featured,
-            in_stock AS "inStock"
-        `,
-        [
+    const result = await pool.query(
+      `
+        INSERT INTO menu_items (
           id,
-          String(item.cat || '').trim(),
-          String(item.name || '').trim(),
-          Number(item.price) || 0,
-          String(item.desc || '').trim(),
-          String(item.photo || '').trim(),
-          Boolean(item.veg),
-          Boolean(item.featured),
-          item.inStock !== false
-        ]
-      );
+          cat,
+          name,
+          price,
+          description,
+          photo,
+          veg,
+          featured,
+          in_stock
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4,
+          $5,
+          $6,
+          $7,
+          $8,
+          $9
+        )
+        ON CONFLICT (id)
+        DO UPDATE SET
+          cat = EXCLUDED.cat,
+          name = EXCLUDED.name,
+          price = EXCLUDED.price,
+          description = EXCLUDED.description,
+          photo = EXCLUDED.photo,
+          veg = EXCLUDED.veg,
+          featured = EXCLUDED.featured,
+          in_stock = EXCLUDED.in_stock,
+          updated_at = NOW()
+        RETURNING
+          id,
+          cat,
+          name,
+          price::FLOAT AS price,
+          description AS "desc",
+          photo,
+          veg,
+          featured,
+          in_stock AS "inStock",
+          created_at AS "createdAt",
+          updated_at AS "updatedAt"
+      `,
+      [
+        id,
+        cleanString(item.cat, 100),
+        cleanString(item.name, 200),
+        Number(item.price) || 0,
+        cleanString(item.desc || item.description, 500),
+        cleanString(item.photo, 2000),
+        Boolean(item.veg),
+        Boolean(item.featured),
+        item.inStock !== false
+      ]
+    );
 
     return result.rows[0];
   },
 
   async toggleStock(id) {
-    const result =
-      await pool.query(
-        `
-          UPDATE menu_items
-          SET
-            in_stock = NOT in_stock,
-            updated_at = NOW()
-          WHERE id = $1
-          RETURNING
-            id,
-            cat,
-            name,
-            price::FLOAT AS price,
-            description AS "desc",
-            photo,
-            veg,
-            featured,
-            in_stock AS "inStock"
-        `,
-        [id]
-      );
+    const result = await pool.query(
+      `
+        UPDATE menu_items
+        SET
+          in_stock = NOT in_stock,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING
+          id,
+          cat,
+          name,
+          price::FLOAT AS price,
+          description AS "desc",
+          photo,
+          veg,
+          featured,
+          in_stock AS "inStock",
+          created_at AS "createdAt",
+          updated_at AS "updatedAt"
+      `,
+      [id]
+    );
 
     return result.rows[0] || null;
   },
 
   async delete(id) {
-    const result =
-      await pool.query(
-        `
-          DELETE FROM menu_items
-          WHERE id = $1
-          RETURNING id
-        `,
-        [id]
-      );
+    const result = await pool.query(
+      `
+        DELETE FROM menu_items
+        WHERE id = $1
+        RETURNING id
+      `,
+      [id]
+    );
 
     return {
       success: result.rowCount > 0,
@@ -590,43 +669,42 @@ const menuHelpers = {
    ========================================================================== */
 
 const userHelpers = {
-
   async findByUsername(username) {
-    const result =
-      await pool.query(
-        `
-          SELECT
-            id,
-            username,
-            password_hash,
-            role,
-            created_at,
-            updated_at
-          FROM users
-          WHERE username = $1
-          LIMIT 1
-        `,
-        [String(username).trim().toLowerCase()]
-      );
+    const result = await pool.query(
+      `
+        SELECT
+          id,
+          username,
+          password_hash,
+          role,
+          created_at,
+          updated_at
+        FROM users
+        WHERE username = $1
+        LIMIT 1
+      `,
+      [
+        cleanString(username, 100).toLowerCase()
+      ]
+    );
 
     return result.rows[0] || null;
   },
 
   async findById(id) {
-    const result =
-      await pool.query(
-        `
-          SELECT
-            id,
-            username,
-            password_hash,
-            role
-          FROM users
-          WHERE id = $1
-          LIMIT 1
-        `,
-        [id]
-      );
+    const result = await pool.query(
+      `
+        SELECT
+          id,
+          username,
+          password_hash,
+          role
+        FROM users
+        WHERE id = $1
+        LIMIT 1
+      `,
+      [id]
+    );
 
     return result.rows[0] || null;
   },
@@ -639,18 +717,17 @@ const userHelpers = {
   },
 
   async updatePassword(id, passwordHash) {
-    const result =
-      await pool.query(
-        `
-          UPDATE users
-          SET
-            password_hash = $2,
-            updated_at = NOW()
-          WHERE id = $1
-          RETURNING id
-        `,
-        [id, passwordHash]
-      );
+    const result = await pool.query(
+      `
+        UPDATE users
+        SET
+          password_hash = $2,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING id
+      `,
+      [id, passwordHash]
+    );
 
     return result.rows[0] || null;
   }
