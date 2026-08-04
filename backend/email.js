@@ -1,60 +1,302 @@
+/* ==========================================================================
+   BREW BUTTERFLY CAFE — GMAIL SMTP
+   ========================================================================== */
+
+require('dotenv').config();
+
 const nodemailer = require('nodemailer');
 
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const NOTIFY_TO = process.env.NOTIFY_TO || SMTP_USER;
+const SMTP_USER =
+  process.env.SMTP_USER;
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS
-  }
-});
+const SMTP_PASS =
+  process.env.SMTP_PASS;
+
+const SMTP_FROM =
+  process.env.SMTP_FROM ||
+  SMTP_USER;
+
+const NOTIFY_EMAIL =
+  process.env.NOTIFY_EMAIL ||
+  SMTP_USER;
+
+if (!SMTP_USER || !SMTP_PASS) {
+  console.warn(
+    '[SMTP] SMTP_USER or SMTP_PASS is missing.'
+  );
+}
+
+const transporter =
+  nodemailer.createTransport({
+    host:
+      process.env.SMTP_HOST ||
+      'smtp.gmail.com',
+
+    port:
+      Number(process.env.SMTP_PORT) ||
+      465,
+
+    secure:
+      String(
+        process.env.SMTP_SECURE || 'true'
+      ).toLowerCase() === 'true',
+
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS
+    },
+
+    connectionTimeout: 15000,
+
+    greetingTimeout: 15000,
+
+    socketTimeout: 20000
+  });
+
+/* ==========================================================================
+   VERIFY SMTP
+   ========================================================================== */
 
 async function verifySmtp() {
+  if (!SMTP_USER || !SMTP_PASS) {
+    throw new Error(
+      'SMTP_USER and SMTP_PASS are required.'
+    );
+  }
+
   await transporter.verify();
+
+  console.log(
+    '[SMTP] Gmail SMTP connection verified.'
+  );
+
   return true;
 }
 
+/* ==========================================================================
+   RESERVATION EMAIL
+   ========================================================================== */
+
+async function sendReservationEmail(
+  reservation
+) {
+  const subject =
+    `🦋 New Table Reservation — ${reservation.id}`;
+
+  const html = `
+    <!DOCTYPE html>
+
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>New Reservation</title>
+      </head>
+
+      <body
+        style="
+          margin:0;
+          padding:0;
+          background:#f5f5f5;
+          font-family:Arial,sans-serif;
+        "
+      >
+
+        <div
+          style="
+            max-width:650px;
+            margin:30px auto;
+            background:white;
+            border-radius:14px;
+            overflow:hidden;
+            box-shadow:0 5px 20px rgba(0,0,0,.08);
+          "
+        >
+
+          <div
+            style="
+              padding:25px;
+              background:#111;
+              color:white;
+              text-align:center;
+            "
+          >
+            <h1 style="margin:0;">
+              🦋 Brew Butterfly Cafe
+            </h1>
+
+            <p style="margin:8px 0 0;">
+              New Reservation
+            </p>
+          </div>
+
+          <div style="padding:30px;">
+
+            <h2>
+              Reservation ${reservation.id}
+            </h2>
+
+            <table
+              style="
+                width:100%;
+                border-collapse:collapse;
+              "
+            >
+
+              <tr>
+                <td style="padding:10px 0;">
+                  <strong>Guest</strong>
+                </td>
+
+                <td style="padding:10px 0;">
+                  ${escapeHtml(reservation.name)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;">
+                  <strong>Phone</strong>
+                </td>
+
+                <td style="padding:10px 0;">
+                  ${escapeHtml(reservation.phone)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;">
+                  <strong>Guests</strong>
+                </td>
+
+                <td style="padding:10px 0;">
+                  ${reservation.guests}
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;">
+                  <strong>Date</strong>
+                </td>
+
+                <td style="padding:10px 0;">
+                  ${escapeHtml(reservation.date)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;">
+                  <strong>Time</strong>
+                </td>
+
+                <td style="padding:10px 0;">
+                  ${escapeHtml(reservation.time)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;">
+                  <strong>Occasion</strong>
+                </td>
+
+                <td style="padding:10px 0;">
+                  ${escapeHtml(reservation.occasion)}
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;">
+                  <strong>Notes</strong>
+                </td>
+
+                <td style="padding:10px 0;">
+                  ${escapeHtml(reservation.notes || 'None')}
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:10px 0;">
+                  <strong>Status</strong>
+                </td>
+
+                <td style="padding:10px 0;">
+                  <strong>
+                    ${escapeHtml(reservation.status)}
+                  </strong>
+                </td>
+              </tr>
+
+            </table>
+
+            <hr style="margin:25px 0;border:0;border-top:1px solid #ddd;">
+
+            <p style="color:#666;">
+              This notification was generated automatically
+              by the Brew Butterfly Cafe reservation system.
+            </p>
+
+          </div>
+
+        </div>
+
+      </body>
+    </html>
+  `;
+
+  const text = `
+Brew Butterfly Cafe — New Reservation
+
+Reservation ID: ${reservation.id}
+
+Guest: ${reservation.name}
+Phone: ${reservation.phone}
+Guests: ${reservation.guests}
+Date: ${reservation.date}
+Time: ${reservation.time}
+Occasion: ${reservation.occasion}
+Notes: ${reservation.notes || 'None'}
+Status: ${reservation.status}
+`;
+
+  const info =
+    await transporter.sendMail({
+      from: SMTP_FROM,
+
+      to: NOTIFY_EMAIL,
+
+      subject,
+
+      text,
+
+      html
+    });
+
+  console.log(
+    `[SMTP] Reservation email sent: ${info.messageId}`
+  );
+
+  return {
+    success: true,
+    messageId: info.messageId
+  };
+}
+
+/* ==========================================================================
+   HTML ESCAPE
+   ========================================================================== */
+
 function escapeHtml(value) {
-  return String(value ?? '')
+  return String(value || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
-async function sendReservationEmail(r) {
-  const subject = `🦋 New Reservation — ${r.id} — ${r.date} ${r.time}`;
+/* ==========================================================================
+   EXPORTS
+   ========================================================================== */
 
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:620px;margin:auto">
-      <h2 style="color:#2f5d50">🦋 Brew Butterfly Cafe — New Reservation</h2>
-      <p>A new table reservation has been submitted from the website.</p>
-      <table cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%">
-        <tr><td><b>Reference</b></td><td>${escapeHtml(r.id)}</td></tr>
-        <tr><td><b>Name</b></td><td>${escapeHtml(r.name)}</td></tr>
-        <tr><td><b>Phone</b></td><td>${escapeHtml(r.phone)}</td></tr>
-        <tr><td><b>Guests</b></td><td>${escapeHtml(r.guests)}</td></tr>
-        <tr><td><b>Date</b></td><td>${escapeHtml(r.date)}</td></tr>
-        <tr><td><b>Time</b></td><td>${escapeHtml(r.time)}</td></tr>
-        <tr><td><b>Occasion</b></td><td>${escapeHtml(r.occasion)}</td></tr>
-        <tr><td><b>Notes</b></td><td>${escapeHtml(r.notes || 'None')}</td></tr>
-        <tr><td><b>Status</b></td><td>Pending</td></tr>
-      </table>
-      <p style="margin-top:20px">Please call the customer to confirm the reservation.</p>
-    </div>
-  `;
-
-  const info = await transporter.sendMail({
-    from: `"Brew Butterfly Cafe" <${SMTP_USER}>`,
-    to: NOTIFY_TO,
-    subject,
-    html
-  });
-
-  return { success: true, messageId: info.messageId };
-}
-
-module.exports = { sendReservationEmail, verifySmtp };
+module.exports = {
+  sendReservationEmail,
+  verifySmtp
+};
