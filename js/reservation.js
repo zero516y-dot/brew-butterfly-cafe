@@ -149,7 +149,10 @@
         if (confirmPanel) confirmPanel.style.display = 'block';
         if (confirmRef) confirmRef.textContent = result.reservationId || '';
         if (confirmDetails) confirmDetails.innerHTML = buildConfirmHTML(data, result.reservationId);
-        showToast('Reservation received successfully.');
+        var successMessage = result && result.emailSent === false
+          ? 'Reservation saved successfully. The email notification could not be sent. Please contact the cafe if you need confirmation.'
+          : 'Reservation received successfully.';
+        showToast(successMessage, result && result.emailSent === false ? 'error' : undefined);
       } catch (err) {
         console.error('[Reservation] FAILED:', err);
         showToast(err.message || 'Could not save reservation. Please try again.', 'error');
