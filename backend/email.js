@@ -12,6 +12,33 @@ const SMTP_USER =
 const SMTP_PASS =
   process.env.SMTP_PASS;
 
+const SMTP_HOST =
+  process.env.SMTP_HOST ||
+  'smtp.gmail.com';
+
+const isGmailHost =
+  String(SMTP_HOST)
+    .toLowerCase()
+    .includes('gmail');
+
+const SMTP_PORT = Number(
+  process.env.SMTP_PORT &&
+    process.env.SMTP_PORT !== ''
+    ? process.env.SMTP_PORT
+    : isGmailHost
+      ? 587
+      : 465
+);
+
+const SMTP_SECURE = String(
+  process.env.SMTP_SECURE &&
+    process.env.SMTP_SECURE !== ''
+    ? process.env.SMTP_SECURE
+    : isGmailHost
+      ? 'false'
+      : 'true'
+).toLowerCase() === 'true';
+
 const SMTP_FROM =
   process.env.SMTP_FROM ||
   SMTP_USER;
@@ -38,18 +65,11 @@ if (!SMTP_PASS) {
 
 const transporter =
   nodemailer.createTransport({
-    host:
-      process.env.SMTP_HOST ||
-      'smtp.gmail.com',
+    host: SMTP_HOST,
 
-    port:
-      Number(process.env.SMTP_PORT) ||
-      465,
+    port: SMTP_PORT,
 
-    secure:
-      String(
-        process.env.SMTP_SECURE ?? 'true'
-      ).toLowerCase() === 'true',
+    secure: SMTP_SECURE,
 
     auth: {
       user:
@@ -76,6 +96,10 @@ async function verifySmtp() {
       'SMTP_USER and SMTP_PASS are required.'
     );
   }
+
+  console.log(
+    `[SMTP] Verifying connection to ${SMTP_HOST}:${SMTP_PORT} (secure=${SMTP_SECURE})...`
+  );
 
   await transporter.verify();
 
@@ -112,7 +136,14 @@ async function sendReservationEmail(
     );
   }
 
-  if (!NOTIFY_EMAIL) {
+  const recipients = String(
+    NOTIFY_EMAIL || SMTP_USER
+  )
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean);
+
+  if (recipients.length === 0) {
     throw new Error(
       'NOTIFY_EMAIL is missing.'
     );
@@ -303,11 +334,15 @@ Notes: ${reservation.notes || 'None'}
 Status: ${reservation.status}
 `;
 
+  console.log(
+    `[SMTP] Sending reservation email to: ${recipients.join(', ')}`
+  );
+
   const info =
     await transporter.sendMail({
       from: SMTP_FROM,
 
-      to: NOTIFY_EMAIL,
+      to: recipients.join(','),
 
       replyTo: SMTP_USER,
 
