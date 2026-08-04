@@ -1,11 +1,13 @@
 {
-  "name": "brew-butterfly-backend",
-  "version": "1.0.0",
-  "description": "Secure Node.js/Express backend for Brew Butterfly Cafe",
+  "name": "brew-butterfly-cafe-backend",
+  "version": "2.0.0",
+  "private": true,
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -15,7 +17,8 @@
     "express-rate-limit": "^7.2.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^9.0.3",
-    "uuid": "^14.0.1"
+    "nodemailer": "^7.0.5",
+    "uuid": "^11.0.5",
+    "better-sqlite3": "^11.10.0"
   }
 }
