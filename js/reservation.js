@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var BACKEND_URL = 'http://localhost:3000';
+  var BACKEND_URL = 'https://brew-butterfly-cafe-1.onrender.com';
   var csrfToken   = null;
 
   /* ---------- CSRF Token ---------- */
