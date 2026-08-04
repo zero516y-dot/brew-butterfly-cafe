@@ -26,6 +26,115 @@ body.admin-body {
   min-height: 100vh;
 }
 
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.login-overlay.hide {
+  display: none;
+}
+
+.login-card {
+  width: min(100%, 430px);
+  background: #fff;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.login-card__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.login-card__icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-accent));
+  color: #fff;
+  font-size: 24px;
+}
+
+.login-card__brand h2 { margin: 0 0 4px; font-size: 22px; }
+.login-card__brand p { margin: 0; color: var(--admin-muted); }
+
+.login-form label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 600;
+  color: var(--admin-text);
+}
+
+.login-form input,
+.login-form select,
+.login-form textarea {
+  width: 100%;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 11px 12px;
+  margin-bottom: 14px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.login-form button {
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.login-error {
+  min-height: 20px;
+  margin: 12px 0 0;
+  color: var(--admin-danger);
+  font-size: 14px;
+}
+
+.backend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-text);
+  background: #f8fafc;
+  border: 1px solid var(--admin-border);
+}
+
+.backend-badge.online {
+  color: var(--admin-success);
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.backend-badge.offline {
+  color: var(--admin-warning);
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.backend-badge .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
 /* Sidebar */
 .admin-sidebar {
   width: 260px;
