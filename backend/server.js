@@ -813,7 +813,7 @@ app.post(
     } catch (error) {
       console.error(
         '[RESERVE] Email failed:',
-        error
+       error.message || error
       );
     }
 
@@ -821,16 +821,19 @@ app.post(
        RESPONSE
        ---------------------------------------------------------------------- */
 
+    const message = emailSent
+      ? 'Your table has been reserved successfully.'
+      : 'Your reservation was saved, but the email notification could not be sent. Please contact the cafe if you need confirmation.';
+
     return res.status(201).json({
       status: 'ok',
 
       reservationId:
-        reservation.id,
+       reservation.id,
 
       emailSent,
 
-      message:
-        'Your table has been reserved successfully.'
+      message
     });
   }
 );
