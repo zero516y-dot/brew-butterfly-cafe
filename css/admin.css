@@ -26,6 +26,14 @@ body.admin-body {
   min-height: 100vh;
 }
 
+body:not(.admin-authenticated) .admin-shell {
+  display: none;
+}
+
+body.admin-authenticated .admin-shell {
+  display: flex;
+}
+
 .login-overlay {
   position: fixed;
   inset: 0;
