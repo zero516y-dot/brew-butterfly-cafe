@@ -9,12 +9,34 @@ const nodemailer = require('nodemailer');
 const RESEND_API_KEY =
   process.env.RESEND_API_KEY;
 
-const RESEND_FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL ||
-  process.env.SMTP_FROM ||
-  process.env.NOTIFY_EMAIL ||
-  process.env.SMTP_USER ||
+const DEFAULT_RESEND_FROM =
   'onboarding@resend.dev';
+
+function resolveResendFromEmail() {
+  const configuredValue =
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.SMTP_FROM ||
+    process.env.NOTIFY_EMAIL ||
+    process.env.SMTP_USER;
+
+  if (!configuredValue) {
+    return DEFAULT_RESEND_FROM;
+  }
+
+  if (
+    /@(gmail|yahoo|hotmail|outlook|live|icloud|protonmail|aol)\./i.test(configuredValue)
+  ) {
+    console.warn(
+      `[EMAIL] Using Resend sender ${DEFAULT_RESEND_FROM} because ${configuredValue} is likely not a verified Resend sender.`
+    );
+    return DEFAULT_RESEND_FROM;
+  }
+
+  return configuredValue;
+}
+
+const RESEND_FROM_EMAIL =
+  resolveResendFromEmail();
 
 const SMTP_USER =
   process.env.SMTP_USER;
@@ -406,85 +428,100 @@ Notes: ${reservation.notes || 'None'}
 Status: ${reservation.status}
 `;
 
-  if (RESEND_API_KEY) {
-    console.log(
-      `[EMAIL] Sending reservation email via Resend to: ${recipients.join(', ')}`
-    );
-
-    const response = await fetch(
-      'https://api.resend.com/emails',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: RESEND_FROM_EMAIL,
-          to: recipients,
-          reply_to: RESEND_FROM_EMAIL,
-          subject,
-          text,
-          html
-        })
-      }
-    );
-
-    const payload = await response.json().catch(function () {
-      return {};
-    });
-
-    if (!response.ok) {
+  async function sendWithSmtp() {
+    if (!SMTP_USER || !SMTP_PASS) {
       throw new Error(
-        payload.message || `Resend request failed (${response.status}).`
+        'SMTP credentials are incomplete.'
       );
     }
 
     console.log(
-      `[EMAIL] Reservation email sent via Resend: ${payload.id}`
+      `[SMTP] Sending reservation email to: ${recipients.join(', ')}`
+    );
+
+    const info =
+      await transporter.sendMail({
+        from: SMTP_FROM,
+        to: recipients.join(','),
+        replyTo: SMTP_USER,
+        subject,
+        text,
+        html
+      });
+
+    console.log(
+      `[SMTP] Reservation email sent: ${info.messageId}`
     );
 
     return {
       success: true,
-      messageId: payload.id,
-      provider: 'resend'
+      messageId: info.messageId,
+      provider: 'smtp'
     };
   }
 
-  if (!SMTP_USER || !SMTP_PASS) {
-    throw new Error(
-      'Email configuration is incomplete. Set RESEND_API_KEY or SMTP_USER/SMTP_PASS.'
-    );
+  if (RESEND_API_KEY) {
+    try {
+      console.log(
+        `[EMAIL] Sending reservation email via Resend to: ${recipients.join(', ')}`
+      );
+
+      const response = await fetch(
+        'https://api.resend.com/emails',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: RESEND_FROM_EMAIL,
+            to: recipients,
+            reply_to: RESEND_FROM_EMAIL,
+            subject,
+            text,
+            html
+          })
+        }
+      );
+
+      const payload = await response.json().catch(function () {
+        return {};
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          payload.message || `Resend request failed (${response.status}).`
+        );
+      }
+
+      console.log(
+        `[EMAIL] Reservation email sent via Resend: ${payload.id}`
+      );
+
+      return {
+        success: true,
+        messageId: payload.id,
+        provider: 'resend'
+      };
+    } catch (error) {
+      console.error(
+        '[EMAIL] Resend failed:',
+        error.message || error
+      );
+
+      if (SMTP_USER && SMTP_PASS) {
+        console.warn(
+          '[EMAIL] Falling back to SMTP because Resend delivery failed.'
+        );
+        return sendWithSmtp();
+      }
+
+      throw error;
+    }
   }
 
-  console.log(
-    `[SMTP] Sending reservation email to: ${recipients.join(', ')}`
-  );
-
-  const info =
-    await transporter.sendMail({
-      from: SMTP_FROM,
-
-      to: recipients.join(','),
-
-      replyTo: SMTP_USER,
-
-      subject,
-
-      text,
-
-      html
-    });
-
-  console.log(
-    `[SMTP] Reservation email sent: ${info.messageId}`
-  );
-
-  return {
-    success: true,
-    messageId: info.messageId,
-    provider: 'smtp'
-  };
+  return sendWithSmtp();
 }
 
 /* ==========================================================================
