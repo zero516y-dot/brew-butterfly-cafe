@@ -209,6 +209,7 @@
 
       fetch(BACKEND_URL + '/api/admin/reservations', {
         headers: { 'Authorization': 'Bearer ' + token }
+         
       })
         .then(function (r) { return r.json(); })
         .then(function (items) {
