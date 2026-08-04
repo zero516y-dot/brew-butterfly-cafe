@@ -66,16 +66,20 @@
     menuTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#94a3b8;">Loading…</td></tr>';
 
     var token = getToken();
-    var p = token
-      ? fetch(BACKEND_URL + '/api/admin/menu', { headers: apiHeaders() }).then(function (r) { return r.ok ? r.json() : null; })
-      : Promise.resolve(null);
-
-    p.then(function (items) {
-      if (!items) items = window.CafeStore ? window.CafeStore.getMenu() : [];
-      drawMenuRows(items);
-    }).catch(function () {
+    if (!token) {
       drawMenuRows(window.CafeStore ? window.CafeStore.getMenu() : []);
-    });
+      return;
+    }
+
+    fetch(BACKEND_URL + '/api/admin/menu', { headers: apiHeaders() })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (items) {
+        if (!items) items = window.CafeStore ? window.CafeStore.getMenu() : [];
+        drawMenuRows(items);
+      })
+      .catch(function () {
+        drawMenuRows(window.CafeStore ? window.CafeStore.getMenu() : []);
+      });
   }
 
   function catName(catId) {
@@ -135,16 +139,20 @@
     resTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">Loading…</td></tr>';
 
     var token = getToken();
-    var p = token
-      ? fetch(BACKEND_URL + '/api/admin/reservations', { headers: apiHeaders() }).then(function (r) { return r.ok ? r.json() : null; })
-      : Promise.resolve(null);
-
-    p.then(function (items) {
-      if (!items) items = window.CafeStore ? window.CafeStore.getReservations() : [];
-      drawReservationRows(items);
-    }).catch(function () {
+    if (!token) {
       drawReservationRows(window.CafeStore ? window.CafeStore.getReservations() : []);
-    });
+      return;
+    }
+
+    fetch(BACKEND_URL + '/api/admin/reservations', { headers: apiHeaders() })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (items) {
+        if (!items) items = window.CafeStore ? window.CafeStore.getReservations() : [];
+        drawReservationRows(items);
+      })
+      .catch(function () {
+        drawReservationRows(window.CafeStore ? window.CafeStore.getReservations() : []);
+      });
   }
 
   function drawReservationRows(reservations) {
@@ -434,6 +442,5 @@
 
   // ── INITIAL BOOT ─────────────────────────────────────────────────────────────
   renderAll();
-   
 
 })();
