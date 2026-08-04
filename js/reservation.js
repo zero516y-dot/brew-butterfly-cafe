@@ -2,7 +2,9 @@
 (function () {
   'use strict';
 
-  var BACKEND_URL = 'https://brew-butterfly-cafe-1.onrender.com';
+  var BACKEND_URL = window.getBrewButterflyBackendUrl
+    ? window.getBrewButterflyBackendUrl('https://brew-butterfly-cafe-1.onrender.com')
+    : 'https://brew-butterfly-cafe-1.onrender.com';
   var csrfToken = null;
   var csrfPromise = null;
 
