@@ -55,7 +55,7 @@ const PORT =
 
 const FRONTEND_URL =
   process.env.FRONTEND_URL ||
-  'https://brew-butterfly-cafe.vercel.app';
+  'https://brewbutterflycafe.vercel.app';
 
 const BACKEND_URL =
   process.env.BACKEND_URL ||
