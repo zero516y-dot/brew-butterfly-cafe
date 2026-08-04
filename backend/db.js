@@ -739,9 +739,10 @@ const userHelpers = {
 
 module.exports = {
   pool,
-  initDatabase,
-  testDatabase,
-  reservationHelpers,
-  menuHelpers,
-  userHelpers
+  initDatabase: initDatabase,
+  testDatabase: testDatabase,
+  reservationHelpers: reservationHelpers,
+  menuHelpers: menuHelpers,
+  userHelpers: userHelpers
 };
+module.exports.default = module.exports;
