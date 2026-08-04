@@ -1,18 +1,10 @@
 /* ==========================================================================
-   BREW BUTTERFLY CAFE
-   PRODUCTION EXPRESS BACKEND
+   BREW BUTTERFLY CAFE — PRODUCTION EXPRESS BACKEND
 
-   Frontend:
-   Vercel
-
-   Backend:
-   Render
-
-   Database:
-   PostgreSQL
-
-   Email:
-   Gmail SMTP
+   Frontend : Vercel
+   Backend  : Render
+   Database : PostgreSQL
+   Email    : Gmail SMTP
    ========================================================================== */
 
 require('dotenv').config();
@@ -25,6 +17,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
+const db = require('./db');
+
 const {
   pool,
   initDatabase,
@@ -32,7 +26,7 @@ const {
   reservationHelpers,
   menuHelpers,
   userHelpers
-} = require('./db');
+} = db;
 
 const {
   sendReservationEmail,
@@ -62,7 +56,7 @@ const BACKEND_URL =
 
 const NODE_ENV =
   process.env.NODE_ENV ||
-  'development';
+  'production';
 
 /* ==========================================================================
    REQUIRED ENVIRONMENT VARIABLES
@@ -76,37 +70,33 @@ const REQUIRED_ENV = [
   'SMTP_PASS'
 ];
 
-const missing =
-  REQUIRED_ENV.filter(
-    key => !process.env[key]
-  );
+const missing = REQUIRED_ENV.filter(
+  key => !process.env[key]
+);
 
 if (missing.length > 0) {
-  console.error(
+  throw new Error(
     `[STARTUP] Missing environment variables: ${missing.join(', ')}`
   );
-
-  process.exit(1);
 }
 
-if (
-  process.env.JWT_SECRET.length < 32
-) {
-  console.error(
+if (process.env.JWT_SECRET.length < 32) {
+  throw new Error(
     '[STARTUP] JWT_SECRET must contain at least 32 characters.'
   );
+}
 
-  process.exit(1);
+if (process.env.ADMIN_PASSWORD.length < 8) {
+  throw new Error(
+    '[STARTUP] ADMIN_PASSWORD must contain at least 8 characters.'
+  );
 }
 
 /* ==========================================================================
    TRUST RENDER PROXY
    ========================================================================== */
 
-app.set(
-  'trust proxy',
-  1
-);
+app.set('trust proxy', 1);
 
 /* ==========================================================================
    SECURITY
@@ -126,8 +116,7 @@ app.use(
         : false,
 
     referrerPolicy: {
-      policy:
-        'strict-origin-when-cross-origin'
+      policy: 'strict-origin-when-cross-origin'
     }
   })
 );
@@ -145,6 +134,8 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
   'http://localhost:5500',
   'http://127.0.0.1:5500'
 ];
@@ -156,9 +147,7 @@ app.use(
         return callback(null, true);
       }
 
-      if (
-        ALLOWED_ORIGINS.includes(origin)
-      ) {
+      if (ALLOWED_ORIGINS.includes(origin)) {
         return callback(null, true);
       }
 
@@ -167,9 +156,7 @@ app.use(
       );
 
       return callback(
-        new Error(
-          `CORS origin not allowed: ${origin}`
-        )
+        new Error('CORS origin not allowed.')
       );
     },
 
@@ -216,13 +203,9 @@ app.use(
 
 const generalLimiter =
   rateLimit({
-    windowMs:
-      15 * 60 * 1000,
-
+    windowMs: 15 * 60 * 1000,
     max: 300,
-
     standardHeaders: true,
-
     legacyHeaders: false,
 
     message: {
@@ -233,13 +216,9 @@ const generalLimiter =
 
 const reserveLimiter =
   rateLimit({
-    windowMs:
-      60 * 1000,
-
+    windowMs: 60 * 1000,
     max: 5,
-
     standardHeaders: true,
-
     legacyHeaders: false,
 
     message: {
@@ -250,13 +229,9 @@ const reserveLimiter =
 
 const loginLimiter =
   rateLimit({
-    windowMs:
-      15 * 60 * 1000,
-
+    windowMs: 15 * 60 * 1000,
     max: 5,
-
     standardHeaders: true,
-
     legacyHeaders: false,
 
     message: {
@@ -265,25 +240,17 @@ const loginLimiter =
     }
   });
 
-app.use(
-  generalLimiter
-);
+app.use(generalLimiter);
 
 /* ==========================================================================
    CSRF
-
-   Stateless signed token.
-
-   This avoids the previous in-memory IP map problem.
    ========================================================================== */
 
 const CSRF_SECRET =
   process.env.CSRF_SECRET ||
   process.env.JWT_SECRET;
 
-function base64url(
-  value
-) {
+function base64url(value) {
   return Buffer
     .from(value)
     .toString('base64')
@@ -325,8 +292,7 @@ function verifyCsrfToken(token) {
     return false;
   }
 
-  const parts =
-    token.split('.');
+  const parts = token.split('.');
 
   if (parts.length !== 3) {
     return false;
@@ -379,17 +345,17 @@ function verifyCsrfToken(token) {
     return false;
   }
 
-  return crypto.timingSafeEqual(
-    Buffer.from(expected),
-    Buffer.from(signature)
-  );
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(expected),
+      Buffer.from(signature)
+    );
+  } catch {
+    return false;
+  }
 }
 
-function verifyCsrf(
-  req,
-  res,
-  next
-) {
+function verifyCsrf(req, res, next) {
   if (
     req.method === 'GET' ||
     req.method === 'HEAD' ||
@@ -398,22 +364,19 @@ function verifyCsrf(
     return next();
   }
 
+  /*
+   * Admin routes use JWT authentication.
+   */
   if (
-    req.path.startsWith(
-      '/api/admin/'
-    )
+    req.path.startsWith('/api/admin/')
   ) {
     return next();
   }
 
   const token =
-    req.headers[
-      'x-csrf-token'
-    ];
+    req.headers['x-csrf-token'];
 
-  if (
-    !verifyCsrfToken(token)
-  ) {
+  if (!verifyCsrfToken(token)) {
     return res.status(403).json({
       error:
         'CSRF token mismatch or expired. Please refresh and try again.'
@@ -431,7 +394,8 @@ app.get(
   '/api/health',
   async (req, res) => {
     try {
-      await testDatabase();
+      const database =
+        await testDatabase();
 
       return res.json({
         status: 'ok',
@@ -442,6 +406,9 @@ app.get(
         database:
           'connected',
 
+        databaseName:
+          database.database,
+
         frontend:
           FRONTEND_URL,
 
@@ -451,7 +418,6 @@ app.get(
         timestamp:
           new Date().toISOString()
       });
-
     } catch (error) {
       console.error(
         '[HEALTH]',
@@ -459,11 +425,8 @@ app.get(
       );
 
       return res.status(503).json({
-        status:
-          'error',
-
-        database:
-          'disconnected'
+        status: 'error',
+        database: 'disconnected'
       });
     }
   }
@@ -565,7 +528,6 @@ app.post(
         role:
           user.role
       });
-
     } catch (error) {
       console.error(
         '[LOGIN]',
@@ -605,6 +567,7 @@ app.post(
       }
 
       if (
+        typeof newPassword !== 'string' ||
         newPassword.length < 8
       ) {
         return res.status(400).json({
@@ -653,7 +616,6 @@ app.post(
         message:
           'Password changed successfully.'
       });
-
     } catch (error) {
       console.error(
         '[CHANGE PASSWORD]',
@@ -750,35 +712,26 @@ app.post(
         )
       );
 
-    const sanitize =
-      value =>
-        String(
-          value || ''
-        )
-          .trim()
-          .slice(
-            0,
-            500
-          )
-          .replace(
-            /[<>]/g,
-            ''
-          );
+    function sanitize(value, max = 500) {
+      return String(value ?? '')
+        .trim()
+        .slice(0, max)
+        .replace(/[<>]/g, '');
+    }
 
     const reservation = {
       id:
         'BBC-' +
-        crypto
-          .randomInt(
-            100000,
-            1000000
-          ),
+        crypto.randomInt(
+          100000,
+          1000000
+        ),
 
       name:
-        sanitize(name),
+        sanitize(name, 200),
 
       phone:
-        sanitize(phone),
+        sanitize(phone, 50),
 
       guests:
         guestCount,
@@ -786,23 +739,27 @@ app.post(
       date,
 
       time:
-        sanitize(time),
+        sanitize(time, 100),
 
       occasion:
         sanitize(
-          occasion
+          occasion,
+          200
         ) ||
         'Regular Visit',
 
       notes:
-        sanitize(notes),
+        sanitize(
+          notes,
+          500
+        ),
 
       status:
         'Pending'
     };
 
     /* ----------------------------------------------------------------------
-       DATABASE
+       SAVE TO DATABASE
        ---------------------------------------------------------------------- */
 
     try {
@@ -813,7 +770,6 @@ app.post(
       console.log(
         `[RESERVE] Saved ${reservation.id}`
       );
-
     } catch (error) {
       console.error(
         '[RESERVE] Database error:',
@@ -827,14 +783,10 @@ app.post(
     }
 
     /* ----------------------------------------------------------------------
-       EMAIL
-
-       IMPORTANT:
-       Email failure DOES NOT delete reservation.
+       SEND EMAIL
        ---------------------------------------------------------------------- */
 
-    let emailSent =
-      false;
+    let emailSent = false;
 
     try {
       const result =
@@ -846,15 +798,12 @@ app.post(
         result &&
         result.success
       ) {
-        emailSent =
-          true;
+        emailSent = true;
 
-        await reservationHelpers
-          .markEmailSent(
-            reservation.id
-          );
+        await reservationHelpers.markEmailSent(
+          reservation.id
+        );
       }
-
     } catch (error) {
       console.error(
         '[RESERVE] Email failed:',
@@ -867,8 +816,7 @@ app.post(
        ---------------------------------------------------------------------- */
 
     return res.status(201).json({
-      status:
-        'ok',
+      status: 'ok',
 
       reservationId:
         reservation.id,
@@ -892,10 +840,7 @@ app.get(
       const items =
         await menuHelpers.getAll();
 
-      return res.json(
-        items
-      );
-
+      return res.json(items);
     } catch (error) {
       console.error(
         '[MENU]',
@@ -923,23 +868,17 @@ app.get(
         totalReservations,
         pendingReservations,
         totalMenuItems
-      ] =
-        await Promise.all([
-          reservationHelpers.count(),
-
-          reservationHelpers.countPending(),
-
-          menuHelpers.count()
-        ]);
+      ] = await Promise.all([
+        reservationHelpers.count(),
+        reservationHelpers.countPending(),
+        menuHelpers.count()
+      ]);
 
       return res.json({
         totalReservations,
-
         pendingReservations,
-
         totalMenuItems
       });
-
     } catch (error) {
       console.error(
         '[ADMIN STATS]',
@@ -966,7 +905,6 @@ app.get(
       return res.json(
         await reservationHelpers.getAll()
       );
-
     } catch (error) {
       console.error(
         '[ADMIN RESERVATIONS]',
@@ -1001,9 +939,7 @@ app.patch(
     ];
 
     if (
-      !VALID_STATUSES.includes(
-        status
-      )
+      !VALID_STATUSES.includes(status)
     ) {
       return res.status(400).json({
         error:
@@ -1013,11 +949,10 @@ app.patch(
 
     try {
       const updated =
-        await reservationHelpers
-          .updateStatus(
-            req.params.id,
-            status
-          );
+        await reservationHelpers.updateStatus(
+          req.params.id,
+          status
+        );
 
       if (!updated) {
         return res.status(404).json({
@@ -1026,10 +961,7 @@ app.patch(
         });
       }
 
-      return res.json(
-        updated
-      );
-
+      return res.json(updated);
     } catch (error) {
       console.error(
         '[UPDATE RESERVATION]',
@@ -1058,7 +990,6 @@ app.delete(
           req.params.id
         )
       );
-
     } catch (error) {
       console.error(
         '[DELETE RESERVATION]',
@@ -1085,7 +1016,6 @@ app.get(
       return res.json(
         await menuHelpers.getAll()
       );
-
     } catch (error) {
       console.error(
         '[ADMIN MENU]',
@@ -1147,20 +1077,17 @@ app.post(
 
     const item = {
       id:
-        'm-' +
-        Date.now(),
+        `m-${crypto.randomUUID()}`,
 
       cat:
         String(cat)
-          .trim(),
+          .trim()
+          .slice(0, 100),
 
       name:
         String(name)
           .trim()
-          .slice(
-            0,
-            200
-          ),
+          .slice(0, 200),
 
       price:
         numericPrice,
@@ -1168,14 +1095,12 @@ app.post(
       desc:
         String(desc || '')
           .trim()
-          .slice(
-            0,
-            500
-          ),
+          .slice(0, 500),
 
       photo:
         String(photo || '')
-          .trim(),
+          .trim()
+          .slice(0, 2000),
 
       veg:
         Boolean(veg),
@@ -1189,11 +1114,8 @@ app.post(
 
     try {
       return res.status(201).json(
-        await menuHelpers.upsert(
-          item
-        )
+        await menuHelpers.upsert(item)
       );
-
     } catch (error) {
       console.error(
         '[CREATE MENU]',
@@ -1241,7 +1163,6 @@ app.put(
           updated
         )
       );
-
     } catch (error) {
       console.error(
         '[UPDATE MENU]',
@@ -1277,10 +1198,7 @@ app.patch(
         });
       }
 
-      return res.json(
-        item
-      );
-
+      return res.json(item);
     } catch (error) {
       console.error(
         '[TOGGLE STOCK]',
@@ -1309,7 +1227,6 @@ app.delete(
           req.params.id
         )
       );
-
     } catch (error) {
       console.error(
         '[DELETE MENU]',
@@ -1335,12 +1252,17 @@ app.post(
     const items =
       req.body;
 
-    if (
-      !Array.isArray(items)
-    ) {
+    if (!Array.isArray(items)) {
       return res.status(400).json({
         error:
           'Expected an array of menu items.'
+      });
+    }
+
+    if (items.length > 500) {
+      return res.status(400).json({
+        error:
+          'Maximum 500 menu items per sync.'
       });
     }
 
@@ -1349,9 +1271,7 @@ app.post(
         await Promise.all(
           items.map(
             item =>
-              menuHelpers.upsert(
-                item
-              )
+              menuHelpers.upsert(item)
           )
         );
 
@@ -1359,7 +1279,6 @@ app.post(
         synced:
           results.length
       });
-
     } catch (error) {
       console.error(
         '[SYNC MENU]',
@@ -1404,9 +1323,7 @@ app.use(
       error
     );
 
-    if (
-      res.headersSent
-    ) {
+    if (res.headersSent) {
       return next(error);
     }
 
@@ -1426,15 +1343,26 @@ app.use(
    ========================================================================== */
 
 async function startServer() {
-  try {
-    console.log('');
-    console.log(
-      '🦋 Brew Butterfly Cafe Backend'
-    );
+  console.log('');
+  console.log('🦋 Brew Butterfly Cafe Backend');
+  console.log('   → Starting...');
 
-    console.log(
-      '   → Starting...'
-    );
+  try {
+    /* ----------------------------------------------------------------------
+       DATABASE
+       ---------------------------------------------------------------------- */
+
+    if (typeof initDatabase !== 'function') {
+      throw new Error(
+        'Database module error: initDatabase is not exported from ./db.js'
+      );
+    }
+
+    if (!pool) {
+      throw new Error(
+        'Database module error: PostgreSQL pool is not exported from ./db.js'
+      );
+    }
 
     await initDatabase();
 
@@ -1442,13 +1370,16 @@ async function startServer() {
       '   → Database connected'
     );
 
+    /* ----------------------------------------------------------------------
+       SMTP
+       ---------------------------------------------------------------------- */
+
     try {
       await verifySmtp();
 
       console.log(
         '   → Gmail SMTP connected'
       );
-
     } catch (smtpError) {
       console.error(
         '[SMTP] Verification failed:',
@@ -1460,32 +1391,88 @@ async function startServer() {
       );
     }
 
-    app.listen(
-      PORT,
-      '0.0.0.0',
-      () => {
-        console.log(
-          `   → Server listening on port ${PORT}`
-        );
+    /* ----------------------------------------------------------------------
+       HTTP SERVER
+       ---------------------------------------------------------------------- */
 
-        console.log(
-          `   → Frontend: ${FRONTEND_URL}`
-        );
+    const server =
+      app.listen(
+        PORT,
+        '0.0.0.0',
+        () => {
+          console.log(
+            `   → Server listening on port ${PORT}`
+          );
 
-        console.log(
-          '   → Database: PostgreSQL'
-        );
+          console.log(
+            `   → Frontend: ${FRONTEND_URL}`
+          );
 
-        console.log(
-          '   → Public API: /api/menu, /api/reserve'
-        );
+          console.log(
+            `   → Backend: ${BACKEND_URL}`
+          );
 
-        console.log(
-          '   → Admin API: /api/admin/*'
-        );
+          console.log(
+            '   → Database: PostgreSQL'
+          );
 
-        console.log('');
-      }
+          console.log(
+            '   → Email: Gmail SMTP'
+          );
+
+          console.log(
+            '   → Public API: /api/menu'
+          );
+
+          console.log(
+            '   → Public API: /api/reserve'
+          );
+
+          console.log(
+            '   → Admin API: /api/admin/*'
+          );
+
+          console.log('');
+        }
+      );
+
+    /* ----------------------------------------------------------------------
+       GRACEFUL SHUTDOWN
+       ---------------------------------------------------------------------- */
+
+    const shutdown = async (signal) => {
+      console.log(
+        `[SERVER] ${signal} received. Shutting down...`
+      );
+
+      server.close(async () => {
+        try {
+          await pool.end();
+
+          console.log(
+            '[SERVER] Database pool closed.'
+          );
+
+          process.exit(0);
+        } catch (error) {
+          console.error(
+            '[SERVER] Shutdown error:',
+            error
+          );
+
+          process.exit(1);
+        }
+      });
+    };
+
+    process.once(
+      'SIGTERM',
+      () => shutdown('SIGTERM')
+    );
+
+    process.once(
+      'SIGINT',
+      () => shutdown('SIGINT')
     );
 
   } catch (error) {
@@ -1498,12 +1485,34 @@ async function startServer() {
       error
     );
 
-    await pool.end();
+    /*
+     * Never call pool.end() blindly.
+     * The previous version caused:
+     *
+     * TypeError: Cannot read properties of undefined
+     * (reading 'end')
+     */
+
+    if (
+      pool &&
+      typeof pool.end === 'function'
+    ) {
+      try {
+        await pool.end();
+      } catch (poolError) {
+        console.error(
+          '[DATABASE] Pool shutdown error:',
+          poolError
+        );
+      }
+    }
 
     process.exit(1);
   }
 }
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;
