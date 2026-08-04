@@ -50,7 +50,13 @@
   }
 
   async function submitReservation(data) {
-    if (!csrfToken) await fetchCsrfToken(false);
+    if (!csrfToken) {
+      try {
+        await fetchCsrfToken(false);
+      } catch (err) {
+        throw new Error('The reservation service is currently unavailable. Please try again later.');
+      }
+    }
 
     var response = await fetch(BACKEND_URL + '/api/reserve', {
       method: 'POST',
@@ -67,8 +73,12 @@
     try { body = await response.json(); } catch (_) {}
 
     if (response.status === 403) {
-      await fetchCsrfToken(true);
-      return submitReservation(data);
+      try {
+        await fetchCsrfToken(true);
+        return submitReservation(data);
+      } catch (err) {
+        throw new Error('The reservation service is currently unavailable. Please try again later.');
+      }
     }
 
     if (!response.ok) {
@@ -174,4 +184,3 @@
 
   document.addEventListener('DOMContentLoaded', wireForm);
 })();
-
