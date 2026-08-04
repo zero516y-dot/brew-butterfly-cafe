@@ -13,11 +13,19 @@
 
   function getToken() { return localStorage.getItem(TOKEN_KEY); }
 
+  function canUseAdminApi() {
+    return !!getToken() || !!window.__bbcAdminAuthenticated;
+  }
+
   function apiHeaders(extra) {
-    return Object.assign({
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + (getToken() || '')
-    }, extra || {});
+    var headers = { 'Content-Type': 'application/json' };
+    var token = getToken();
+
+    if (token) {
+      headers.Authorization = 'Bearer ' + token;
+    }
+
+    return Object.assign(headers, extra || {});
   }
 
   // ── Elements ────────────────────────────────────────────────────────────────
@@ -36,9 +44,11 @@
 
   // ── Stats ───────────────────────────────────────────────────────────────────
   function updateStats() {
-    var token = getToken();
-    if (token) {
-      fetch(BACKEND_URL + '/api/admin/stats', { headers: apiHeaders() })
+    if (canUseAdminApi()) {
+      fetch(BACKEND_URL + '/api/admin/stats', {
+        credentials: 'include',
+        headers: apiHeaders()
+      })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           if (!d) return;
@@ -67,13 +77,15 @@
     if (!menuTableBody) return;
     menuTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#94a3b8;">Loading…</td></tr>';
 
-    var token = getToken();
-    if (!token) {
+    if (!canUseAdminApi()) {
       drawMenuRows(window.CafeStore ? window.CafeStore.getMenu() : []);
       return;
     }
 
-    fetch(BACKEND_URL + '/api/admin/menu', { headers: apiHeaders() })
+    fetch(BACKEND_URL + '/api/admin/menu', {
+      credentials: 'include',
+      headers: apiHeaders()
+    })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (items) {
         if (!items) items = window.CafeStore ? window.CafeStore.getMenu() : [];
@@ -140,13 +152,15 @@
     if (!resTableBody) return;
     resTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">Loading…</td></tr>';
 
-    var token = getToken();
-    if (!token) {
+    if (!canUseAdminApi()) {
       drawReservationRows(window.CafeStore ? window.CafeStore.getReservations() : []);
       return;
     }
 
-    fetch(BACKEND_URL + '/api/admin/reservations', { headers: apiHeaders() })
+    fetch(BACKEND_URL + '/api/admin/reservations', {
+      credentials: 'include',
+      headers: apiHeaders()
+    })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (items) {
         if (!items) items = window.CafeStore ? window.CafeStore.getReservations() : [];
@@ -196,12 +210,14 @@
       if (!btn) return;
       var action = btn.getAttribute('data-action');
       var id     = btn.getAttribute('data-id');
-      var token  = getToken();
+      var canUse = canUseAdminApi();
 
       if (action === 'toggle-stock') {
-        if (token) {
+        if (canUse) {
           fetch(BACKEND_URL + '/api/admin/menu/' + id + '/toggle-stock', {
-            method: 'PATCH', headers: apiHeaders()
+            method: 'PATCH',
+            credentials: 'include',
+            headers: apiHeaders()
           }).then(function () { renderAll(); }).catch(function () {
             if (window.CafeStore) { window.CafeStore.toggleStock(id); renderAll(); }
           });
@@ -210,9 +226,11 @@
         }
       } else if (action === 'delete') {
         if (confirm('Are you sure you want to delete this menu item?')) {
-          if (token) {
+          if (canUse) {
             fetch(BACKEND_URL + '/api/admin/menu/' + id, {
-              method: 'DELETE', headers: apiHeaders()
+              method: 'DELETE',
+              credentials: 'include',
+              headers: apiHeaders()
             }).then(function () {
               if (window.CafeStore) window.CafeStore.deleteMenuItem(id);
               renderAll();
@@ -235,15 +253,17 @@
       if (!btn) return;
       var action = btn.getAttribute('data-res-action');
       var id     = btn.getAttribute('data-id');
-      var token  = getToken();
+      var canUse = canUseAdminApi();
 
       var STATUS_MAP = { confirm: 'Confirmed', cancel: 'Cancelled' };
 
       if (action === 'confirm' || action === 'cancel') {
         var newStatus = STATUS_MAP[action];
-        if (token) {
+        if (canUse) {
           fetch(BACKEND_URL + '/api/admin/reservations/' + id, {
-            method: 'PATCH', headers: apiHeaders(),
+            method: 'PATCH',
+            credentials: 'include',
+            headers: apiHeaders(),
             body: JSON.stringify({ status: newStatus })
           }).then(function () {
             if (window.CafeStore) window.CafeStore.updateReservationStatus(id, newStatus);
@@ -256,9 +276,11 @@
         }
       } else if (action === 'delete') {
         if (confirm('Delete this reservation record?')) {
-          if (token) {
+          if (canUse) {
             fetch(BACKEND_URL + '/api/admin/reservations/' + id, {
-              method: 'DELETE', headers: apiHeaders()
+              method: 'DELETE',
+              credentials: 'include',
+              headers: apiHeaders()
             }).then(function () {
               if (window.CafeStore) window.CafeStore.deleteReservation(id);
               renderAll();
@@ -347,17 +369,23 @@
       }
 
       var itemData = { id: editingItemId, name: name, price: price, cat: cat, desc: desc, photo: photo, veg: veg, featured: featured, inStock: inStock };
-      var token    = getToken();
+      var canUse = canUseAdminApi();
 
       var apiCall;
-      if (token) {
+      if (canUse) {
         if (editingItemId) {
           apiCall = fetch(BACKEND_URL + '/api/admin/menu/' + editingItemId, {
-            method: 'PUT', headers: apiHeaders(), body: JSON.stringify(itemData)
+            method: 'PUT',
+            credentials: 'include',
+            headers: apiHeaders(),
+            body: JSON.stringify(itemData)
           });
         } else {
           apiCall = fetch(BACKEND_URL + '/api/admin/menu', {
-            method: 'POST', headers: apiHeaders(), body: JSON.stringify(itemData)
+            method: 'POST',
+            credentials: 'include',
+            headers: apiHeaders(),
+            body: JSON.stringify(itemData)
           });
         }
       } else {
@@ -441,6 +469,7 @@
 
   // Listen for localStorage store updates
   window.addEventListener('cafe_store_updated', renderAll);
+  window.addEventListener('admin-auth-state-changed', renderAll);
 
   // ── INITIAL BOOT ─────────────────────────────────────────────────────────────
   renderAll();
