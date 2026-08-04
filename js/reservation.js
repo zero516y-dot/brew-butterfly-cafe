@@ -1,119 +1,36 @@
 
 /* ==========================================================================
    BREW BUTTERFLY CAFE — RESERVATION MODULE
-   Frontend: Vercel
-   Backend: Render
 
-   Handles:
-   - CSRF token
-   - Reservation validation
-   - Backend API submission
-   - Confirmation UI
-   - Error handling
+   Frontend:
+   https://brew-butterfly-cafe.vercel.app
 
-   IMPORTANT:
-   Reservations are now submitted ONLY to the live backend.
-   We do NOT silently switch to local/offline mode.
+   Backend:
+   https://brew-butterfly-cafe-1.onrender.com
+
    ========================================================================== */
 
 (function () {
   'use strict';
 
-  /* ------------------------------------------------------------------------
-     CONFIG
-     ------------------------------------------------------------------------ */
-
-  var BACKEND_URL =
-    'https://brew-butterfly-cafe-1.onrender.com';
-
+  var BACKEND_URL = 'https://brew-butterfly-cafe-1.onrender.com';
   var csrfToken = null;
+  var csrfPromise = null;
 
-  /* ------------------------------------------------------------------------
-     CSRF TOKEN
-     ------------------------------------------------------------------------ */
-
-  async function fetchCsrfToken() {
-    try {
-      var response = await fetch(
-        BACKEND_URL + '/api/csrf-token',
-        {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/json'
-          },
-          cache: 'no-store'
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          'Unable to get security token. Server returned ' +
-          response.status
-        );
-      }
-
-      var data = await response.json();
-
-      if (!data || !data.csrfToken) {
-        throw new Error(
-          'Backend did not return a valid CSRF token.'
-        );
-      }
-
-      csrfToken = data.csrfToken;
-
-      console.log(
-        '[Reservation] CSRF token received.'
-      );
-
-      return csrfToken;
-
-    } catch (error) {
-      csrfToken = null;
-
-      console.error(
-        '[Reservation] CSRF error:',
-        error
-      );
-
-      throw new Error(
-        'Unable to connect securely to the reservation server. Please try again.'
-      );
-    }
-  }
-
-  /* ------------------------------------------------------------------------
-     SANITIZE HELPER
-     ------------------------------------------------------------------------ */
-
-  function safe(str) {
-    return String(str || '')
-      .trim()
-      .replace(/[<>&"]/g, function (c) {
-        return {
-          '<': '&lt;',
-          '>': '&gt;',
-          '&': '&amp;',
-          '"': '&quot;'
-        }[c];
-      });
-  }
-
-  /* ------------------------------------------------------------------------
+  /* ========================================================================
      TOAST
-     ------------------------------------------------------------------------ */
+     ======================================================================== */
 
-  function showToast(msg, type) {
+  function showToast(message, type) {
     var toast = document.getElementById('toast');
     var text = document.getElementById('toast-text');
 
     if (!toast || !text) {
-      alert(msg);
+      alert(message);
       return;
     }
 
-    text.textContent = msg;
+    text.textContent = message;
 
     toast.className =
       'toast show' +
@@ -126,121 +43,202 @@
     }, 5000);
   }
 
-  /* ------------------------------------------------------------------------
-     SUBMIT RESERVATION
-     ------------------------------------------------------------------------ */
+  /* ========================================================================
+     HTML SAFE TEXT
+     ======================================================================== */
 
-  async function submitReservation(data) {
+  function safe(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
-    /*
-     * Always make sure we have a fresh CSRF token.
-     */
-    if (!csrfToken) {
-      await fetchCsrfToken();
+  /* ========================================================================
+     GET CSRF TOKEN
+     ======================================================================== */
+
+  function fetchCsrfToken() {
+    if (csrfToken) {
+      return Promise.resolve(csrfToken);
     }
 
-    var response;
+    if (csrfPromise) {
+      return csrfPromise;
+    }
 
-    try {
-      response = await fetch(
-        BACKEND_URL + '/api/reserve',
-        {
-          method: 'POST',
+    csrfPromise = fetch(
+      BACKEND_URL + '/api/csrf-token',
+      {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        },
+        cache: 'no-store'
+      }
+    )
+      .then(function (response) {
 
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-Token': csrfToken
-          },
-
-          credentials: 'include',
-
-          body: JSON.stringify(data)
+        if (!response.ok) {
+          throw new Error(
+            'Security server error: HTTP ' +
+            response.status
+          );
         }
-      );
 
-    } catch (networkError) {
+        return response.json();
+      })
+      .then(function (data) {
 
-      console.error(
-        '[Reservation] Network error:',
-        networkError
-      );
+        if (!data || !data.csrfToken) {
+          throw new Error(
+            'The reservation server did not provide a security token.'
+          );
+        }
 
-      throw new Error(
-        'Cannot connect to the reservation server. Please check your internet connection and try again.'
-      );
-    }
+        csrfToken = data.csrfToken;
 
-    /*
-     * Read response safely.
-     */
-    var body = {};
-
-    try {
-      body = await response.json();
-    } catch (jsonError) {
-      console.error(
-        '[Reservation] Invalid server response:',
-        jsonError
-      );
-    }
-
-    /*
-     * Handle backend errors.
-     */
-    if (!response.ok) {
-
-      console.error(
-        '[Reservation] Backend error:',
-        response.status,
-        body
-      );
-
-      /*
-       * CSRF token may have expired.
-       * Get a new one and retry once.
-       */
-      if (
-        response.status === 403 &&
-        csrfToken
-      ) {
-        console.warn(
-          '[Reservation] CSRF rejected. Refreshing token and retrying...'
+        console.log(
+          '[Reservation] CSRF token loaded successfully.'
         );
+
+        return csrfToken;
+      })
+      .catch(function (error) {
 
         csrfToken = null;
 
-        await fetchCsrfToken();
+        console.error(
+          '[Reservation] CSRF error:',
+          error
+        );
 
-        return submitReservation(data);
-      }
+        throw error;
 
-      throw new Error(
-        body.error ||
-        'Reservation failed. Please try again.'
-      );
-    }
+      })
+      .finally(function () {
+        csrfPromise = null;
+      });
 
-    return body;
+    return csrfPromise;
   }
 
-  /* ------------------------------------------------------------------------
+  /* ========================================================================
+     SUBMIT RESERVATION
+     ======================================================================== */
+
+  function submitReservation(data, retry) {
+
+    retry = retry || false;
+
+    return fetchCsrfToken()
+      .then(function (token) {
+
+        return fetch(
+          BACKEND_URL + '/api/reserve',
+          {
+            method: 'POST',
+
+            credentials: 'include',
+
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRF-Token': token
+            },
+
+            body: JSON.stringify(data)
+          }
+        );
+      })
+
+      .then(function (response) {
+
+        return response.text()
+          .then(function (text) {
+
+            var body = {};
+
+            try {
+              body = text
+                ? JSON.parse(text)
+                : {};
+            } catch (error) {
+              body = {
+                error: text || 'Invalid server response.'
+              };
+            }
+
+            return {
+              response: response,
+              body: body
+            };
+          });
+      })
+
+      .then(function (result) {
+
+        var response = result.response;
+        var body = result.body;
+
+        console.log(
+          '[Reservation] Backend status:',
+          response.status
+        );
+
+        if (response.ok) {
+          return body;
+        }
+
+        /*
+         * CSRF token expired/invalid.
+         * Get a new token and retry exactly once.
+         */
+        if (
+          response.status === 403 &&
+          !retry
+        ) {
+
+          console.warn(
+            '[Reservation] CSRF rejected. Refreshing token...'
+          );
+
+          csrfToken = null;
+
+          return submitReservation(
+            data,
+            true
+          );
+        }
+
+        throw new Error(
+          body.error ||
+          'Reservation failed. Server returned HTTP ' +
+          response.status
+        );
+      });
+  }
+
+  /* ========================================================================
      CONFIRMATION HTML
-     ------------------------------------------------------------------------ */
+     ======================================================================== */
 
-  function buildConfirmHTML(
-    data,
-    reservationId
-  ) {
+  function buildConfirmHTML(data) {
 
-    return (
+    var html = '';
+
+    html +=
       '<div>' +
         '<span>Name:</span> ' +
         '<strong>' +
           safe(data.name) +
         '</strong>' +
-      '</div>' +
+      '</div>';
 
+    html +=
       '<div>' +
         '<span>Date &amp; Time:</span> ' +
         '<strong>' +
@@ -248,27 +246,28 @@
           ' at ' +
           safe(data.time) +
         '</strong>' +
-      '</div>' +
+      '</div>';
 
+    html +=
       '<div>' +
         '<span>Guests:</span> ' +
         '<strong>' +
           safe(data.guests) +
           ' Persons' +
         '</strong>' +
-      '</div>' +
+      '</div>';
 
-      (
-        data.occasion
-          ? '<div>' +
-              '<span>Occasion:</span> ' +
-              '<strong>' +
-                safe(data.occasion) +
-              '</strong>' +
-            '</div>'
-          : ''
-      ) +
+    if (data.occasion) {
+      html +=
+        '<div>' +
+          '<span>Occasion:</span> ' +
+          '<strong>' +
+            safe(data.occasion) +
+          '</strong>' +
+        '</div>';
+    }
 
+    html +=
       '<div style="' +
         'margin-top:14px;' +
         'padding:12px;' +
@@ -277,28 +276,30 @@
         'color:#047857;' +
         'font-size:13px;' +
       '">' +
-
         '✅ Reservation received successfully. ' +
         'We will contact you to confirm your table.' +
+      '</div>';
 
-      '</div>'
-    );
+    return html;
   }
 
-  /* ------------------------------------------------------------------------
+  /* ========================================================================
      SHOW CONFIRMATION
-     ------------------------------------------------------------------------ */
+     ======================================================================== */
 
-  function showConfirmation(
-    reservationData,
-    reservationId
-  ) {
+  function showConfirmation(data, reservationId) {
 
     var refEl =
       document.getElementById('confirm-ref');
 
     var detailsEl =
       document.getElementById('confirm-details');
+
+    var formStage =
+      document.getElementById('form-stage');
+
+    var confirmPanel =
+      document.getElementById('confirm-panel');
 
     if (refEl) {
       refEl.textContent =
@@ -307,17 +308,8 @@
 
     if (detailsEl) {
       detailsEl.innerHTML =
-        buildConfirmHTML(
-          reservationData,
-          reservationId
-        );
+        buildConfirmHTML(data);
     }
-
-    var formStage =
-      document.getElementById('form-stage');
-
-    var confirmPanel =
-      document.getElementById('confirm-panel');
 
     if (formStage) {
       formStage.style.display = 'none';
@@ -328,54 +320,85 @@
     }
   }
 
-  /* ------------------------------------------------------------------------
-     FORM
-     ------------------------------------------------------------------------ */
+  /* ========================================================================
+     RESET FORM
+     ======================================================================== */
+
+  function resetReservationForm(form, guestCount) {
+
+    form.reset();
+
+    if (guestCount) {
+      guestCount.textContent = '2';
+    }
+
+    var formStage =
+      document.getElementById('form-stage');
+
+    var confirmPanel =
+      document.getElementById('confirm-panel');
+
+    if (confirmPanel) {
+      confirmPanel.style.display = 'none';
+    }
+
+    if (formStage) {
+      formStage.style.display = 'block';
+    }
+
+    /*
+     * Force a fresh CSRF token for the next reservation.
+     */
+    csrfToken = null;
+    csrfPromise = null;
+
+    fetchCsrfToken()
+      .catch(function (error) {
+        console.error(
+          '[Reservation] CSRF refresh failed:',
+          error
+        );
+      });
+  }
+
+  /* ========================================================================
+     INITIALIZE FORM
+     ======================================================================== */
 
   function wireForm() {
 
     var form =
-      document.getElementById(
-        'reservation-form'
-      );
+      document.getElementById('reservation-form');
 
     if (!form) {
       console.warn(
-        '[Reservation] reservation-form not found.'
+        '[Reservation] #reservation-form was not found.'
       );
-
       return;
     }
 
     var guestCount =
-      document.getElementById(
-        'guest-count'
-      );
+      document.getElementById('guest-count');
+
+    var minusBtn =
+      document.getElementById('guest-minus');
+
+    var plusBtn =
+      document.getElementById('guest-plus');
+
+    var dateInput =
+      document.getElementById('r-date');
+
+    var submitBtn =
+      form.querySelector('.submit-btn');
+
+    var newReservationBtn =
+      document.getElementById('new-reservation');
 
     var guests = 2;
 
-    var minusBtn =
-      document.getElementById(
-        'guest-minus'
-      );
-
-    var plusBtn =
-      document.getElementById(
-        'guest-plus'
-      );
-
-    var dateInput =
-      document.getElementById(
-        'r-date'
-      );
-
-    var submitBtn =
-      form.querySelector(
-        '.submit-btn'
-      );
-
     /* ----------------------------------------------------------------------
-       DATE MINIMUM
+       DATE
        ---------------------------------------------------------------------- */
 
     if (dateInput) {
@@ -389,14 +412,24 @@
     }
 
     /* ----------------------------------------------------------------------
-       GUEST MINUS
+       INITIAL GUEST COUNT
+       ---------------------------------------------------------------------- */
+
+    if (guestCount) {
+      guestCount.textContent = guests;
+    }
+
+    /* ----------------------------------------------------------------------
+       MINUS GUEST
        ---------------------------------------------------------------------- */
 
     if (minusBtn) {
 
       minusBtn.addEventListener(
         'click',
-        function () {
+        function (event) {
+
+          event.preventDefault();
 
           guests =
             Math.max(
@@ -405,22 +438,23 @@
             );
 
           if (guestCount) {
-            guestCount.textContent =
-              guests;
+            guestCount.textContent = guests;
           }
         }
       );
     }
 
     /* ----------------------------------------------------------------------
-       GUEST PLUS
+       PLUS GUEST
        ---------------------------------------------------------------------- */
 
     if (plusBtn) {
 
       plusBtn.addEventListener(
         'click',
-        function () {
+        function (event) {
+
+          event.preventDefault();
 
           guests =
             Math.min(
@@ -429,93 +463,95 @@
             );
 
           if (guestCount) {
-            guestCount.textContent =
-              guests;
+            guestCount.textContent = guests;
           }
         }
       );
     }
 
     /* ----------------------------------------------------------------------
-       GET CSRF TOKEN
+       PRELOAD CSRF
        ---------------------------------------------------------------------- */
 
-    /*
-     * We intentionally do NOT silently ignore errors here.
-     */
     fetchCsrfToken()
       .catch(function (error) {
 
-        console.error(
-          '[Reservation] Initial CSRF request failed:',
-          error
+        console.warn(
+          '[Reservation] Backend connection not ready:',
+          error.message
         );
 
       });
 
-    /* ----------------------------------------------------------------------
-       FORM SUBMIT
-       ---------------------------------------------------------------------- */
+    /* ======================================================================
+       SUBMIT
+       ====================================================================== */
 
     form.addEventListener(
       'submit',
-      async function (e) {
+      function (event) {
 
-        e.preventDefault();
+        event.preventDefault();
 
-        /* --------------------------------------------------------------
-           READ FORM VALUES
-           -------------------------------------------------------------- */
+        /* ------------------------------------------------------------------
+           GET VALUES
+           ------------------------------------------------------------------ */
+
+        var nameInput =
+          document.getElementById('r-name');
+
+        var phoneInput =
+          document.getElementById('r-phone');
+
+        var dateField =
+          document.getElementById('r-date');
+
+        var timeField =
+          document.getElementById('r-time');
+
+        var occasionField =
+          document.getElementById('r-occasion');
+
+        var notesField =
+          document.getElementById('r-notes');
 
         var name =
-          (
-            document.getElementById(
-              'r-name'
-            ) || {}
-          ).value || '';
+          nameInput
+            ? nameInput.value.trim()
+            : '';
 
         var phone =
-          (
-            document.getElementById(
-              'r-phone'
-            ) || {}
-          ).value || '';
+          phoneInput
+            ? phoneInput.value.trim()
+            : '';
 
         var date =
-          (
-            document.getElementById(
-              'r-date'
-            ) || {}
-          ).value || '';
+          dateField
+            ? dateField.value
+            : '';
 
         var time =
-          (
-            document.getElementById(
-              'r-time'
-            ) || {}
-          ).value || '';
+          timeField
+            ? timeField.value
+            : '';
 
         var occasion =
-          (
-            document.getElementById(
-              'r-occasion'
-            ) || {}
-          ).value || '';
+          occasionField
+            ? occasionField.value.trim()
+            : '';
 
         var notes =
-          (
-            document.getElementById(
-              'r-notes'
-            ) || {}
-          ).value || '';
+          notesField
+            ? notesField.value.trim()
+            : '';
 
-        /* --------------------------------------------------------------
-           VALIDATION
-           -------------------------------------------------------------- */
+        /* ------------------------------------------------------------------
+           VALIDATE NAME
+           ------------------------------------------------------------------ */
 
         if (
-          !name.trim() ||
-          name.trim().length < 2
+          !name ||
+          name.length < 2
         ) {
 
           showToast(
@@ -526,11 +562,13 @@
           return;
         }
 
+        /* ------------------------------------------------------------------
+           VALIDATE PHONE
+           ------------------------------------------------------------------ */
+
         if (
-          !phone.trim() ||
-          !/^\+?[\d\s\-]{7,15}$/.test(
-            phone.trim()
-          )
+          !phone ||
+          !/^\+?[\d\s\-]{7,15}$/.test(phone)
         ) {
 
           showToast(
@@ -540,6 +578,10 @@
 
           return;
         }
+
+        /* ------------------------------------------------------------------
+           VALIDATE DATE
+           ------------------------------------------------------------------ */
 
         if (!date) {
 
@@ -551,6 +593,10 @@
           return;
         }
 
+        /* ------------------------------------------------------------------
+           VALIDATE TIME
+           ------------------------------------------------------------------ */
+
         if (!time) {
 
           showToast(
@@ -561,227 +607,163 @@
           return;
         }
 
-        /* --------------------------------------------------------------
-           RESERVATION DATA
-           -------------------------------------------------------------- */
+        /* ------------------------------------------------------------------
+           BUILD DATA
+           ------------------------------------------------------------------ */
 
         var reservationData = {
-
-          name:
-            name.trim(),
-
-          phone:
-            phone.trim(),
-
-          guests:
-            guests,
-
-          date:
-            date,
-
-          time:
-            time,
-
-          occasion:
-            occasion.trim() ||
-            'Regular Visit',
-
-          notes:
-            notes.trim()
+          name: name,
+          phone: phone,
+          guests: guests,
+          date: date,
+          time: time,
+          occasion: occasion || 'Regular Visit',
+          notes: notes
         };
 
-        /* --------------------------------------------------------------
-           BUTTON LOADING
-           -------------------------------------------------------------- */
+        /* ------------------------------------------------------------------
+           LOADING
+           ------------------------------------------------------------------ */
 
         if (submitBtn) {
-
           submitBtn.disabled = true;
-
-          submitBtn.textContent =
-            'Submitting…';
+          submitBtn.textContent = 'Submitting…';
         }
 
-        try {
+        showToast(
+          'Sending reservation...'
+        );
 
-          console.log(
-            '[Reservation] Sending reservation to:',
-            BACKEND_URL + '/api/reserve'
-          );
+        /* ------------------------------------------------------------------
+           SEND TO RENDER
+           ------------------------------------------------------------------ */
 
-          /* ------------------------------------------------------------
-             SEND TO REAL BACKEND
-             ------------------------------------------------------------ */
+        submitReservation(
+          reservationData,
+          false
+        )
+          .then(function (result) {
 
-          var result =
-            await submitReservation(
-              reservationData
+            console.log(
+              '[Reservation] Success:',
+              result
             );
 
-          console.log(
-            '[Reservation] Backend response:',
-            result
-          );
+            var reservationId =
+              result.reservationId ||
+              ('BBC-' + Date.now());
 
-          var refId =
-            result.reservationId ||
-            ('BBC-' + Date.now());
+            /*
+             * LocalStorage is ONLY an optional cache.
+             * The real reservation is already stored by the backend.
+             */
+            if (
+              window.CafeStore &&
+              typeof window.CafeStore.addReservation ===
+                'function'
+            ) {
 
-          /* ------------------------------------------------------------
-             OPTIONAL LOCAL CACHE
-             ------------------------------------------------------------ */
+              try {
 
-          /*
-           * LocalStorage is ONLY a cache now.
-           * It is NOT treated as the actual reservation database.
-           */
-          if (
-            window.CafeStore &&
-            typeof window.CafeStore.addReservation ===
-              'function'
-          ) {
+                window.CafeStore.addReservation(
+                  Object.assign(
+                    {
+                      id: reservationId,
+                      source: 'backend'
+                    },
+                    reservationData
+                  )
+                );
 
-            try {
+              } catch (storageError) {
 
-              window.CafeStore.addReservation(
-                Object.assign(
-                  {
-                    id: refId,
-                    source: 'backend'
-                  },
-                  reservationData
-                )
-              );
+                console.warn(
+                  '[Reservation] Local cache failed:',
+                  storageError
+                );
 
-            } catch (storageError) {
-
-              console.warn(
-                '[Reservation] Local cache failed:',
-                storageError
-              );
-
+              }
             }
-          }
 
-          /* ------------------------------------------------------------
-             SHOW SUCCESS
-             ------------------------------------------------------------ */
+            showConfirmation(
+              reservationData,
+              reservationId
+            );
 
-          showConfirmation(
-            reservationData,
-            refId
-          );
+            showToast(
+              'Table reserved successfully! 🎉'
+            );
 
-          showToast(
-            'Table reserved successfully! 🎉'
-          );
+          })
+          .catch(function (error) {
 
-        } catch (err) {
+            console.error(
+              '[Reservation] FAILED:',
+              error
+            );
 
-          console.error(
-            '[Reservation] Submission failed:',
-            err
-          );
+            /*
+             * IMPORTANT:
+             *
+             * We DO NOT save a fake offline reservation.
+             *
+             * If Render fails, the customer sees the actual
+             * failure instead of believing the booking succeeded.
+             */
 
-          /*
-           * IMPORTANT:
-           *
-           * We no longer create a fake local reservation here.
-           *
-           * If the backend failed, the customer must know that
-           * the reservation was NOT confirmed.
-           */
+            var message =
+              error &&
+              error.message
+                ? error.message
+                : 'Reservation failed. Please try again.';
 
-          showToast(
-            err.message ||
-            'Reservation failed. Please try again.',
-            'error'
-          );
+            showToast(
+              message,
+              'error'
+            );
 
-        } finally {
+          })
+          .finally(function () {
 
-          if (submitBtn) {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent =
+                'Submit Reservation';
+            }
 
-            submitBtn.disabled = false;
-
-            submitBtn.textContent =
-              'Submit Reservation';
-          }
-        }
+          });
       }
     );
 
-    /* ----------------------------------------------------------------------
+    /* ======================================================================
        NEW RESERVATION
-       ---------------------------------------------------------------------- */
+       ====================================================================== */
 
-    var newResBtn =
-      document.getElementById(
-        'new-reservation'
-      );
+    if (newReservationBtn) {
 
-    if (newResBtn) {
-
-      newResBtn.addEventListener(
+      newReservationBtn.addEventListener(
         'click',
-        function () {
+        function (event) {
 
-          form.reset();
+          event.preventDefault();
 
           guests = 2;
 
-          if (guestCount) {
-            guestCount.textContent =
-              guests;
-          }
-
-          var formStage =
-            document.getElementById(
-              'form-stage'
-            );
-
-          var confirmPanel =
-            document.getElementById(
-              'confirm-panel'
-            );
-
-          if (confirmPanel) {
-            confirmPanel.style.display =
-              'none';
-          }
-
-          if (formStage) {
-            formStage.style.display =
-              'block';
-          }
-
-          /*
-           * Get a fresh CSRF token for
-           * the next reservation.
-           */
-          csrfToken = null;
-
-          fetchCsrfToken()
-            .catch(function (error) {
-
-              console.error(
-                '[Reservation] CSRF refresh failed:',
-                error
-              );
-
-            });
+          resetReservationForm(
+            form,
+            guestCount
+          );
         }
       );
     }
   }
 
-  /* ------------------------------------------------------------------------
-     INITIALIZE
-     ------------------------------------------------------------------------ */
+  /* ========================================================================
+     START
+     ======================================================================== */
 
   if (
-    document.readyState ===
-    'loading'
+    document.readyState === 'loading'
   ) {
 
     document.addEventListener(
@@ -795,4 +777,4 @@
   }
 
 })();
-```
+
