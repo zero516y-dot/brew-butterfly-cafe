@@ -1,24 +1,25 @@
 {
-  "name": "brew-butterfly-cafe-backend",
+  "name": "brew-butterfly-backend",
   "version": "2.0.0",
   "private": true,
+  "description": "Brew Butterfly Cafe production backend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.18.0 <27.0.0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.18.2",
-    "express-rate-limit": "^7.2.0",
-    "helmet": "^7.1.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^7.0.5",
-    "uuid": "^11.0.5",
-    "better-sqlite3": "^11.10.0"
+    "nodemailer": "^7.0.3",
+    "pg": "^8.16.3"
   }
 }
