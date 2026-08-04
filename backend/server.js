@@ -153,29 +153,34 @@ function isAllowedOrigin(origin) {
     return true;
   }
 
-  const normalizedOrigin = origin.toLowerCase();
+  try {
+    const parsedOrigin = new URL(origin);
+    const hostname = parsedOrigin.hostname.toLowerCase();
 
-  return ALLOWED_ORIGINS.some(candidate => {
-    if (!candidate) {
-      return false;
-    }
-
-    const normalizedCandidate = candidate.toLowerCase();
-
-    if (normalizedOrigin === normalizedCandidate) {
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return true;
     }
 
-    if (
-      normalizedCandidate.includes('vercel.app') &&
-      normalizedOrigin.endsWith('.vercel.app')
-    ) {
-      return normalizedOrigin === normalizedCandidate ||
-        normalizedOrigin === `https://www${normalizedCandidate.slice(normalizedCandidate.indexOf('.'))}`;
+    if (hostname === 'vercel.app' || hostname.endsWith('.vercel.app')) {
+      return true;
     }
 
+    const normalizedOrigin = origin.toLowerCase();
+
+    return ALLOWED_ORIGINS.some(candidate => {
+      if (!candidate) {
+        return false;
+      }
+
+      try {
+        return new URL(candidate).origin.toLowerCase() === normalizedOrigin;
+      } catch {
+        return candidate.toLowerCase() === normalizedOrigin;
+      }
+    });
+  } catch {
     return false;
-  });
+  }
 }
 
 app.use(
