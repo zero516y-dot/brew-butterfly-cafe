@@ -55,7 +55,7 @@ const PORT =
 
 const FRONTEND_URL =
   process.env.FRONTEND_URL ||
-  'https://brewbutterflycafe.vercel.app';
+  'https://brew-butterfly-cafe.vercel.app';
 
 const BACKEND_URL =
   process.env.BACKEND_URL ||
@@ -134,9 +134,10 @@ app.use(
 
 const ALLOWED_ORIGINS = [
   FRONTEND_URL,
-
   'https://brew-butterfly-cafe.vercel.app',
-
+  'https://brewbutterflycafe.vercel.app',
+  'https://www.brewbutterflycafe.vercel.app',
+  'https://www.brew-butterfly-cafe.vercel.app',
   'http://localhost',
   'http://127.0.0.1',
   'http://localhost:3000',
@@ -145,7 +146,37 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:5173',
   'http://localhost:5500',
   'http://127.0.0.1:5500'
-];
+].filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) {
+    return true;
+  }
+
+  const normalizedOrigin = origin.toLowerCase();
+
+  return ALLOWED_ORIGINS.some(candidate => {
+    if (!candidate) {
+      return false;
+    }
+
+    const normalizedCandidate = candidate.toLowerCase();
+
+    if (normalizedOrigin === normalizedCandidate) {
+      return true;
+    }
+
+    if (
+      normalizedCandidate.includes('vercel.app') &&
+      normalizedOrigin.endsWith('.vercel.app')
+    ) {
+      return normalizedOrigin === normalizedCandidate ||
+        normalizedOrigin === `https://www${normalizedCandidate.slice(normalizedCandidate.indexOf('.'))}`;
+    }
+
+    return false;
+  });
+}
 
 app.use(
   cors({
@@ -154,7 +185,7 @@ app.use(
         return callback(null, true);
       }
 
-      if (ALLOWED_ORIGINS.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
 
