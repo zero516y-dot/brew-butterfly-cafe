@@ -942,16 +942,19 @@ app.post(
           reservation.id
         );
       }
-    } catch (error) {
-      console.error(
-        '[RESERVE] Email failed:',
-       error.message || error
-      );
+        } catch (error) {
+  console.error(
+    '[RESERVE] Email failed:',
+    error.message || error
+  );
 
-      console.error(
-  '[EMAIL]',
-  error
-);
+  console.error('[EMAIL]', error);
+}
+
+/* ----------------------------------------------------------------------
+   RESPONSE
+   ---------------------------------------------------------------------- */
+    
     /* ----------------------------------------------------------------------
        RESPONSE
        ---------------------------------------------------------------------- */
@@ -972,6 +975,7 @@ app.post(
     });
   }
 );
+
 
 /* ==========================================================================
    PUBLIC MENU
