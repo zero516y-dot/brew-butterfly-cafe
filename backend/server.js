@@ -6,7 +6,9 @@
    Database : PostgreSQL
    Email    : Resend API
    ========================================================================== */
-
+const cookieParser = require('cookie-parser');
+const app = express();
+app.use(cookieParser());
 require('dotenv').config();
 
 const express = require('express');
