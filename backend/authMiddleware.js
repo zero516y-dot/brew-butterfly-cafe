@@ -1,17 +1,38 @@
 /* ==========================================================================
    BREW BUTTERFLY CAFE — JWT AUTH MIDDLEWARE
+   Supports:
+   1. Authorization: Bearer <JWT>
+   2. HttpOnly cookie: bbc_admin_token
    ========================================================================== */
 
 require('dotenv').config();
 
 const jwt = require('jsonwebtoken');
 
+const COOKIE_NAME = 'bbc_admin_token';
+
+/* ==========================================================================
+   GET TOKEN
+   ========================================================================== */
+
 function getTokenFromRequest(req) {
+  /* ------------------------------------------------------------------------
+     1. Authorization header
+     ------------------------------------------------------------------------ */
+
   const authHeader = req.headers.authorization || '';
 
   if (authHeader.startsWith('Bearer ')) {
-    return authHeader.slice(7).trim();
+    const token = authHeader.slice(7).trim();
+
+    if (token) {
+      return token;
+    }
   }
+
+  /* ------------------------------------------------------------------------
+     2. Cookie
+     ------------------------------------------------------------------------ */
 
   const cookieHeader = req.headers.cookie || '';
 
@@ -19,65 +40,81 @@ function getTokenFromRequest(req) {
     return '';
   }
 
-  const cookies = Object.fromEntries(
-    cookieHeader
-      .split(';')
-      .map((entry) => entry.trim())
-      .filter(Boolean)
-      .map((entry) => {
-        const separatorIndex = entry.indexOf('=');
+  const cookies = {};
 
-        if (separatorIndex === -1) {
-          return [entry, ''];
-        }
+  for (const part of cookieHeader.split(';')) {
+    const separatorIndex = part.indexOf('=');
 
-        return [entry.slice(0, separatorIndex), entry.slice(separatorIndex + 1)];
-      })
-  );
+    if (separatorIndex === -1) {
+      continue;
+    }
 
-  return cookies.bbc_admin_token || '';
+    const name = part
+      .slice(0, separatorIndex)
+      .trim();
+
+    const value = part
+      .slice(separatorIndex + 1)
+      .trim();
+
+    if (!name) {
+      continue;
+    }
+
+    try {
+      cookies[name] = decodeURIComponent(value);
+    } catch {
+      cookies[name] = value;
+    }
+  }
+
+  return cookies[COOKIE_NAME] || '';
 }
 
-function requireAuth(
-  req,
-  res,
-  next
-) {
+/* ==========================================================================
+   VERIFY JWT
+   ========================================================================== */
+
+function verifyToken(token) {
+  if (!process.env.JWT_SECRET) {
+    throw new Error(
+      'JWT_SECRET is not configured.'
+    );
+  }
+
+  return jwt.verify(
+    token,
+    process.env.JWT_SECRET,
+    {
+      algorithms: ['HS256']
+    }
+  );
+}
+
+/* ==========================================================================
+   AUTHENTICATION
+   ========================================================================== */
+
+function requireAuth(req, res, next) {
   try {
     const token = getTokenFromRequest(req);
 
     if (!token) {
       return res.status(401).json({
-        error:
-          'Authentication required.'
+        error: 'Authentication required.'
       });
     }
 
-    if (!process.env.JWT_SECRET) {
-      console.error(
-        '[AUTH] JWT_SECRET is missing.'
-      );
-
-      return res.status(500).json({
-        error:
-          'Authentication service is not configured.'
-      });
-    }
-
-    const decoded =
-      jwt.verify(
-        token,
-        process.env.JWT_SECRET
-      );
+    const decoded = verifyToken(token);
 
     if (
       !decoded ||
+      typeof decoded !== 'object' ||
       !decoded.id ||
       !decoded.username
     ) {
       return res.status(401).json({
-        error:
-          'Invalid authentication token.'
+        error: 'Invalid authentication token.'
       });
     }
 
@@ -91,23 +128,50 @@ function requireAuth(
       error.message
     );
 
+    if (
+      error.name === 'TokenExpiredError'
+    ) {
+      return res.status(401).json({
+        error: 'Authentication token expired.'
+      });
+    }
+
+    if (
+      error.name === 'JsonWebTokenError'
+    ) {
+      return res.status(401).json({
+        error: 'Invalid authentication token.'
+      });
+    }
+
+    if (
+      error.message ===
+      'JWT_SECRET is not configured.'
+    ) {
+      return res.status(500).json({
+        error:
+          'Authentication service is not configured.'
+      });
+    }
+
     return res.status(401).json({
       error:
-        'Invalid or expired authentication token.'
+        'Authentication failed.'
     });
   }
 }
 
-function requireAdmin(
-  req,
-  res,
-  next
-) {
+/* ==========================================================================
+   ADMIN AUTHENTICATION
+   ========================================================================== */
+
+function requireAdmin(req, res, next) {
   return requireAuth(
     req,
     res,
     () => {
       if (
+        !req.user ||
         req.user.role !== 'admin'
       ) {
         return res.status(403).json({
@@ -121,8 +185,12 @@ function requireAdmin(
   );
 }
 
+/* ==========================================================================
+   EXPORTS
+   ========================================================================== */
+
 module.exports = {
   requireAuth,
-  requireAdmin
+  requireAdmin,
+  getTokenFromRequest
 };
-
