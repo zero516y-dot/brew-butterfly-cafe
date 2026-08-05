@@ -4,7 +4,7 @@
    Frontend : Vercel
    Backend  : Render
    Database : PostgreSQL
-   Email    : Gmail SMTP
+   Email    : Resend API
    ========================================================================== */
 
 require('dotenv').config();
@@ -86,15 +86,14 @@ if (missing.length > 0) {
 }
 
 const hasResend = Boolean(process.env.RESEND_API_KEY);
-const hasSmtp = Boolean(
-  process.env.SMTP_USER && process.env.SMTP_PASS
-);
 
-if (!hasResend && !hasSmtp) {
-  throw new Error(
-    '[STARTUP] Provide RESEND_API_KEY or SMTP_USER/SMTP_PASS for email delivery.'
-  );
+if (!hasResend) {
+    throw new Error(
+        '[STARTUP] RESEND_API_KEY is required for email delivery.'
+    );
 }
+
+
 
 if (process.env.JWT_SECRET.length < 32) {
   throw new Error(
@@ -753,18 +752,18 @@ app.post(
 );
 
 /* ==========================================================================
-   SMTP DIAGNOSTICS
+   EMAIL DIAGNOSTICS
    ========================================================================== */
 
-app.get('/api/debug/smtp', async (req, res) => {
+app.get('/api/debug/email', async (req, res) => {
   try {
    const status = await getSmtpStatus();
    return res.json(status);
   } catch (error) {
-   console.error('[SMTP DEBUG]', error);
+   console.error('[EMAIL DEBUG]', error);
    return res.status(500).json({
      ready: false,
-     error: error.message || 'SMTP diagnostics failed.'
+     error: error.message || 'EMAIL diagnostics failed.'
    });
   }
 });
@@ -948,12 +947,11 @@ app.post(
         '[RESERVE] Email failed:',
        error.message || error
       );
-      console.error(
-       '[RESERVE] SMTP details:',
-       error.response || error.responseCode || error.code || error.command || null
-      );
-    }
 
+      console.error(
+  '[EMAIL]',
+  error
+);
     /* ----------------------------------------------------------------------
        RESPONSE
        ---------------------------------------------------------------------- */
@@ -1552,25 +1550,25 @@ async function startServer() {
     );
 
     /* ----------------------------------------------------------------------
-       SMTP
-       ---------------------------------------------------------------------- */
+   RESEND
+   ---------------------------------------------------------------------- */
 
-    try {
-      await verifySmtp();
+try {
+  await verifySmtp();
 
-      console.log(
-        '   → Gmail SMTP connected'
-      );
-    } catch (smtpError) {
-      console.error(
-        '[SMTP] Verification failed:',
-        smtpError.message
-      );
+  console.log(
+    '   → Resend Email API connected'
+  );
+} catch (error) {
+  console.error(
+    '[EMAIL]',
+    error.message
+  );
 
-      console.error(
-        '[SMTP] Reservations will still be saved.'
-      );
-    }
+  console.error(
+    '[EMAIL] Reservation emails are disabled.'
+  );
+}
 
     /* ----------------------------------------------------------------------
        HTTP SERVER
@@ -1598,8 +1596,10 @@ async function startServer() {
           );
 
           console.log(
-            '   → Email: Gmail SMTP'
-          );
+  '   → Email: Resend API'
+);
+
+         
 
           console.log(
             '   → Public API: /api/menu'
