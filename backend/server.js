@@ -145,15 +145,7 @@ const ALLOWED_ORIGINS = [
   'https://brew-butterfly-cafe.vercel.app',
   'https://brewbutterflycafe.vercel.app',
   'https://www.brewbutterflycafe.vercel.app',
-  'https://www.brew-butterfly-cafe.vercel.app',
-  'http://localhost',
-  'http://127.0.0.1',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:5500',
-  'http://127.0.0.1:5500'
+  'https://www.brew-butterfly-cafe.vercel.app'
 ].filter(Boolean);
 
 function isAllowedOrigin(origin) {
