@@ -166,7 +166,7 @@ function isAllowedOrigin(origin) {
     const hostname = parsedOrigin.hostname.toLowerCase();
 
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return true;
+      return NODE_ENV !== 'production';
     }
 
     const normalizedOrigin = origin.toLowerCase();
@@ -233,14 +233,14 @@ app.use(
 
 app.use(
   express.json({
-    limit: '100kb'
+    limit: '5mb'
   })
 );
 
 app.use(
   express.urlencoded({
     extended: false,
-    limit: '100kb'
+    limit: '5mb'
   })
 );
 
@@ -501,6 +501,188 @@ app.get(
 );
 
 /* ==========================================================================
+   GOOGLE REVIEWS SYNC (public)
+   Auto-refreshes the rating and reviews shown on the website from the
+   Google Places API. Falls back to the last known figures if the API key
+   is not configured or the upstream call fails, so the site never breaks.
+   Env: GOOGLE_PLACES_API_KEY, GOOGLE_PLACES_PLACE_ID
+   ========================================================================== */
+
+const FALLBACK_REVIEWS = {
+  source: 'fallback',
+  rating: 4.0,
+  reviewCount: 16,
+  ratingDistribution: { '5': 8, '4': 4, '3': 1, '2': 1, '1': 2 },
+  reviews: [
+    {
+      author: 'Saroj Yonjan',
+      stars: 5,
+      time: 'a month ago',
+      text: 'Good service'
+    },
+    {
+      author: 'Aashish Shrestha',
+      stars: 5,
+      time: '2 months ago',
+      text: 'Beautiful place'
+    }
+  ],
+  updatedAt: null
+};
+
+const GOOGLE_REVIEWS_TTL_MS =
+  6 * 60 * 60 * 1000;
+
+let googleReviewsCache = {
+  data: null,
+  fetchedAt: 0
+};
+
+function getFallbackReviews() {
+  return Object.assign(
+    {},
+    FALLBACK_REVIEWS,
+    { updatedAt: new Date().toISOString() }
+  );
+}
+
+async function fetchGoogleReviews() {
+  const apiKey =
+    process.env.GOOGLE_PLACES_API_KEY;
+
+  const placeId =
+    process.env.GOOGLE_PLACES_PLACE_ID;
+
+  if (!apiKey || !placeId) {
+    return getFallbackReviews();
+  }
+
+  const response = await fetch(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'rating,userRatingCount,reviews'
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Google Places API responded with ${response.status}`
+    );
+  }
+
+  const data =
+    await response.json();
+
+  const reviews = (
+    Array.isArray(data.reviews)
+      ? data.reviews
+      : []
+  )
+    // Only showcase positive feedback (3+ stars) on the website.
+    .filter(review =>
+      Number(review.rating) >= 3
+    )
+    .map((review) => ({
+    author:
+      review.authorAttribution?.displayName ||
+      'Google reviewer',
+    stars:
+      Number(review.rating) || 0,
+    time:
+      review.relativePublishTimeDescription ||
+      'recently',
+    text:
+      typeof review.text?.text === 'string'
+        ? review.text.text.slice(0, 600)
+        : ''
+  }));
+
+  const ratingDistribution = {};
+
+  reviews.forEach((review) => {
+    const key = String(Math.round(review.stars));
+    ratingDistribution[key] =
+      (ratingDistribution[key] || 0) + 1;
+  });
+
+  return {
+    source: 'google',
+    rating:
+      Number(data.rating) || 4.0,
+    reviewCount:
+      Number(data.userRatingCount) || reviews.length,
+    ratingDistribution,
+    reviews,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+const reviewsLimiter =
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+
+    message: {
+      error:
+        'Too many requests. Please slow down.'
+    }
+  });
+
+app.get(
+  '/api/public/reviews',
+  reviewsLimiter,
+  async (req, res) => {
+    const now = Date.now();
+
+    if (
+      googleReviewsCache.data &&
+      now - googleReviewsCache.fetchedAt <
+        GOOGLE_REVIEWS_TTL_MS
+    ) {
+      return res.json(
+        Object.assign(
+          {},
+          googleReviewsCache.data,
+          { cached: true }
+        )
+      );
+    }
+
+    try {
+      const data =
+        await fetchGoogleReviews();
+
+      googleReviewsCache = {
+        data,
+        fetchedAt: now
+      };
+
+      return res.json(
+        Object.assign(
+          {},
+          data,
+          { cached: false }
+        )
+      );
+    } catch (error) {
+      console.error(
+        '[REVIEWS]',
+        error.message
+      );
+
+      return res.json(getFallbackReviews());
+    }
+  }
+);
+
+/* ==========================================================================
    ADMIN AUTH HELPERS
    ========================================================================== */
 
@@ -535,14 +717,20 @@ function setAuthCookie(res, token) {
 }
 
 function sanitizePhotoUrl(value) {
-  const raw = String(value || '').trim().slice(0, 2000);
+  const raw = String(value || '').trim().slice(0, 3000000);
 
   if (!raw) {
     return '';
   }
 
-  if (/^\s*(javascript|data|vbscript):/i.test(raw)) {
+  if (/^\s*(javascript|vbscript):/i.test(raw)) {
     throw new Error('Photo URL uses a blocked protocol.');
+  }
+
+  // Inline raster images uploaded through the admin panel (base64 data URL).
+  // Only raster formats are allowed — SVG is rejected to avoid script risk.
+  if (/^data:image\/(png|jpe?g|webp|gif|avif);base64,/i.test(raw)) {
+    return raw;
   }
 
   if (raw.length > 8) {
@@ -655,14 +843,13 @@ app.post(
 
      setAuthCookie(res, token);
 
+     // Log successful admin login for audit trail
+     console.info('[ADMIN LOGIN] Successful login for user:', user.username);
+
      return res.json({
        token,
-
-       username:
-         user.username,
-
-       role:
-         user.role
+       username: user.username,
+       role: user.role
      });
    } catch (error) {
      console.error(
@@ -1463,9 +1650,17 @@ app.post(
     }
 
     try {
+      const prepared = items.map(item => {
+        const next = { ...item };
+        if (next.photo != null) {
+          next.photo = sanitizePhotoUrl(next.photo);
+        }
+        return next;
+      });
+
       const results =
         await Promise.all(
-          items.map(
+          prepared.map(
             item =>
               menuHelpers.upsert(item)
           )
