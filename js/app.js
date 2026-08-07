@@ -1,6 +1,4 @@
-/* ==========================================================================
-   BREW BUTTERFLY CAFE â€” MAIN PUBLIC APP LOGIC
-   ========================================================================== */
+
 
 (function(){
   "use strict";
@@ -16,12 +14,43 @@
   var reviewsList = document.getElementById('reviews-list');
   var ratingBars = document.getElementById('rating-bars');
 
+  // Live menu served from the backend (admin edits). Falls back to the
+  // static seed when the backend is unreachable.
+  var remoteMenu = null;
+
+  function currentMenuItems() {
+    if (remoteMenu && remoteMenu.length) return remoteMenu;
+    return window.CafeStore.getMenu();
+  }
+
+  /* ---------- MOTION PREFERENCES ---------- */
+  var prefersReduced = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- SCROLL REVEAL OBSERVER (shared) ---------- */
+  var animationObserver = null;
+  if ('IntersectionObserver' in window) {
+    animationObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+  }
+
   /* ---------- LOADER HIDER ---------- */
   function hideLoader(){
     if(loader) loader.classList.add('hide');
   }
   window.addEventListener('load', function(){ setTimeout(hideLoader, 800); });
   setTimeout(hideLoader, 2500);
+
+  /* ---------- IMAGE FALLBACK (never show a broken photo) ---------- */
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG' || img.dataset.fbk) return;
+    img.dataset.fbk = '1';
+    img.src = 'assets/cafe-vibe.jpg';
+  }, true);
 
   /* ---------- ICON SVG HELPER ---------- */
   function icon(id){
@@ -36,7 +65,7 @@
     panelsEl.innerHTML = '';
 
     var categories = window.CafeStore.getCategories();
-    var menuItems = window.CafeStore.getMenu();
+    var menuItems = currentMenuItems();
 
     var activeTabSlug = '';
 
@@ -223,7 +252,7 @@
     showcaseTrack.innerHTML = '';
     if (showcaseTimer) { clearInterval(showcaseTimer); showcaseTimer = null; }
 
-    var menuItems = window.CafeStore.getMenu();
+    var menuItems = currentMenuItems();
     var featured  = menuItems.filter(function(m){ return m.featured; });
     if (featured.length === 0) featured = menuItems.slice(0, 6);
     var total = featured.length;
@@ -238,14 +267,14 @@
       card.innerHTML =
         '<div class="sc-visual">' +
           '<img src="' + escapeHtml(photoUrl) + '" alt="' + escapeHtml(item.name) + '" loading="lazy">' +
-          '<span class="sc-tag">⭐ Crowd Favorite</span>' +
+          '<span class="sc-tag">Crowd Favorite</span>' +
         '</div>' +
         '<div class="sc-body">' +
           '<h4>' + escapeHtml(item.name) + '</h4>' +
           '<p>' + escapeHtml(item.desc || '') + '</p>' +
           '<div class="sc-footer">' +
             '<span class="sc-price">Rs ' + item.price + '</span>' +
-            '<button class="sc-btn btn-primary" style="padding:6px 14px;font-size:12px;" data-item="' + escapeHtml(item.name) + '">Select</button>' +
+            '<button class="sc-btn" data-item="' + escapeHtml(item.name) + '">Select</button>' +
           '</div>' +
         '</div>';
       showcaseTrack.appendChild(card);
@@ -360,177 +389,293 @@
   }
 
   /* ---------- 3D MENU ANIMATION ---------- */
-  function init3DEffects(){
-    // Initialize scroll-based 3D animations
-    var observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
-
-    var animationObserver = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
+  function attachTilt(selector, intensity, lift){
+    document.querySelectorAll(selector).forEach(function(el){
+      el.addEventListener('mouseenter', function(){
+        if (prefersReduced) return;
+        el.classList.add('tilt-active');
+        el.style.transform = 'perspective(900px) translateY(' + (-(lift || 6)) + 'px)';
       });
-    }, observerOptions);
-
-    // Observe menu cards for scroll animations
-    document.querySelectorAll('.menu-card').forEach(function(card) {
-      card.classList.add('animate-in');
-      animationObserver.observe(card);
-
-      // Interactive 3D mouse tilt effect
-      card.addEventListener('mousemove', function(e) {
-        var rect = card.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-        var centerX = rect.width / 2;
-        var centerY = rect.height / 2;
-        var rotateX = -((y - centerY) / centerY) * 12;
-        var rotateY = ((x - centerX) / centerX) * 12;
-        card.style.transform = 'perspective(1000px) rotateX(' + rotateX + 'deg) rotateY(' + rotateY + 'deg) translateY(-8px) scale(1.02)';
+      el.addEventListener('mousemove', function(e){
+        if (prefersReduced) return;
+        var rect = el.getBoundingClientRect();
+        var x = (e.clientX - rect.left) / rect.width - 0.5;
+        var y = (e.clientY - rect.top) / rect.height - 0.5;
+        el.style.transform =
+          'perspective(900px) rotateX(' + (-y * intensity).toFixed(2) + 'deg) rotateY(' +
+          (x * intensity).toFixed(2) + 'deg) translateY(' + (-(lift || 6)) + 'px)';
       });
-
-      card.addEventListener('mouseleave', function() {
-        card.style.transform = '';
+      el.addEventListener('mouseleave', function(){
+        el.style.transform = '';
+        el.classList.remove('tilt-active');
       });
-    });
-
-    // Add staggered animation to showcase items
-    document.querySelectorAll('.showcase-card').forEach(function(card, index) {
-      card.style.animationDelay = (index * 0.1) + 's';
-      card.addEventListener('mousemove', function(e) {
-        var rect = card.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-        var centerX = rect.width / 2;
-        var centerY = rect.height / 2;
-        var rotateX = -((y - centerY) / centerY) * 10;
-        var rotateY = ((x - centerX) / centerX) * 10;
-        card.style.transform = 'perspective(1000px) rotateX(' + rotateX + 'deg) rotateY(' + rotateY + 'deg) translateY(-8px)';
-      });
-      card.addEventListener('mouseleave', function() {
-        card.style.transform = '';
-      });
-    });
-
-    // Add animation to gallery items
-    document.querySelectorAll('.g-tile').forEach(function(tile, index) {
-      tile.style.animationDelay = (index * 0.15) + 's';
-      tile.classList.add('reveal');
     });
   }
 
+  function init3DEffects(){
+    // Gentle fade-up entrance for menu cards when they scroll into view
+    document.querySelectorAll('.menu-card').forEach(function(card){
+      card.classList.add('animate-in');
+      if (animationObserver) {
+        animationObserver.observe(card);
+      } else {
+        card.classList.add('visible');
+      }
+    });
+
+    // Refined, low-intensity tilt (Premium personality — no fighting transitions)
+    attachTilt('.menu-card', 5, 8);
+    attachTilt('.showcase-card', 4, 8);
+    attachTilt('.testimonial-card', 4, 6);
+
+    // Gallery tiles — reveal + stagger
+    document.querySelectorAll('.g-tile').forEach(function(tile, index){
+      tile.style.animationDelay = (index * 0.12) + 's';
+    });
+
+    // Delegated tilt for dynamically re-rendered review cards
+    document.addEventListener('mouseenter', function(e){
+      var card = e.target && e.target.closest ? e.target.closest('.review-card') : null;
+      if (!card || prefersReduced) return;
+      card.classList.add('tilt-active');
+      card.style.transform = 'perspective(900px) translateY(-5px)';
+    }, true);
+    document.addEventListener('mousemove', function(e){
+      var card = e.target && e.target.closest ? e.target.closest('.review-card') : null;
+      if (!card || prefersReduced) return;
+      var rect = card.getBoundingClientRect();
+      var x = (e.clientX - rect.left) / rect.width - 0.5;
+      var y = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform =
+        'perspective(900px) rotateX(' + (-y * 4).toFixed(2) + 'deg) rotateY(' +
+        (x * 4).toFixed(2) + 'deg) translateY(-5px)';
+    });
+    document.addEventListener('mouseleave', function(e){
+      var card = e.target && e.target.closest ? e.target.closest('.review-card') : null;
+      if (!card) return;
+      card.style.transform = '';
+      card.classList.remove('tilt-active');
+    }, true);
+  }
+
+  /* ---------- HERO PARALLAX (mouse + scroll, composed) ---------- */
+  function initHeroParallax() {
+    var heroEl = document.getElementById('home');
+    if (!heroEl) return;
+
+    var butterfly = document.getElementById('hero-butterfly');
+    var glow1 = heroEl.querySelector('.glow1');
+    var glow2 = heroEl.querySelector('.glow2');
+    var bg = heroEl.querySelector('.hero-bg-photo');
+
+    var offset = { nx: 0, ny: 0, scrollY: 0 };
+
+    function applyMotion() {
+      if (prefersReduced) return;
+      if (butterfly) butterfly.style.translate = (offset.nx * -34) + 'px ' + (offset.ny * -26 + offset.scrollY * 0.3) + 'px';
+      if (glow1) glow1.style.translate = (offset.nx * 26) + 'px ' + (offset.ny * 18 + offset.scrollY * 0.14) + 'px';
+      if (glow2) glow2.style.translate = (offset.nx * -20) + 'px ' + (offset.ny * -14 + offset.scrollY * -0.1) + 'px';
+      if (bg) bg.style.backgroundPosition = '50% ' + (50 + offset.scrollY * 0.12) + '%';
+    }
+
+    heroEl.addEventListener('mousemove', function (e) {
+      var rect = heroEl.getBoundingClientRect();
+      offset.nx = (e.clientX - rect.left) / rect.width - 0.5;
+      offset.ny = (e.clientY - rect.top) / rect.height - 0.5;
+      applyMotion();
+    });
+
+    window.addEventListener('scroll', function () {
+      if (window.scrollY < window.innerHeight * 1.2) {
+        offset.scrollY = window.scrollY;
+        applyMotion();
+      }
+    }, { passive: true });
+  }
+
   /* ---------- REVIEWS & BARS ---------- */
-  function renderReviews(){
+  var reviewFallback = {
+    rating: 4.0,
+    reviewCount: 16,
+    ratingDistribution: { '5': 8, '4': 4, '3': 1, '2': 1, '1': 2 },
+    reviews: [
+      {
+        name: 'Saroj Yonjan',
+        initials: 'SY',
+        stars: 5,
+        time: 'a month ago',
+        text: 'Good service'
+      },
+      {
+        name: 'Aashish Shrestha',
+        initials: 'AS',
+        stars: 5,
+        time: '2 months ago',
+        text: 'Beautiful place'
+      }
+    ]
+  };
+
+  function initialsOf(name) {
+    var parts = String(name || '?').trim().split(/\s+/);
+    var first = (parts[0] || '?').charAt(0);
+    var last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+    return (first + last).toUpperCase();
+  }
+
+  function starsString(n) {
+    var clamped = Math.max(0, Math.min(5, Math.round(n || 0)));
+    return '\u2605'.repeat(clamped) + '\u2606'.repeat(5 - clamped);
+  }
+
+  function updateRatingSummary(data) {
+    var num = document.getElementById('rating-num');
+    var starsEl = document.getElementById('rating-stars');
+    var count = document.getElementById('rating-count');
+    var heroStars = document.querySelector('#hero-rating .stars');
+    var heroText = document.getElementById('hero-rating-text');
+
+    var value = Number(data.rating);
+    var rounded = isFinite(value) ? value.toFixed(1) : '4.0';
+
+    if (num) num.textContent = rounded;
+    if (starsEl) starsEl.textContent = starsString(value);
+    if (count) count.textContent = data.reviewCount;
+    if (heroStars) heroStars.textContent = starsString(value);
+    if (heroText) heroText.textContent = rounded + ' Rating (' + data.reviewCount + ' Google Reviews)';
+  }
+
+  function renderRatingBars(distribution, total) {
+    if (!ratingBars) return;
+    ratingBars.innerHTML = '';
+
+    [5, 4, 3, 2, 1].forEach(function (s) {
+      var c = distribution && distribution[s] ? distribution[s] : 0;
+      var pct = total > 0 ? Math.round((c / total) * 100) : 0;
+
+      var row = document.createElement('div');
+      row.className = 'rating-bar-row';
+
+      var label = document.createElement('span');
+      label.className = 'mono';
+      label.textContent = s + '\u2605';
+      row.appendChild(label);
+
+      var bar = document.createElement('div');
+      bar.className = 'rating-bar';
+      var fill = document.createElement('div');
+      fill.className = 'rating-bar-fill';
+      fill.style.width = pct + '%';
+      bar.appendChild(fill);
+      row.appendChild(bar);
+
+      var countEl = document.createElement('span');
+      countEl.className = 'mono';
+      countEl.textContent = c;
+      row.appendChild(countEl);
+
+      ratingBars.appendChild(row);
+    });
+  }
+
+  function renderReviewCards(reviews) {
     if (!reviewsList) return;
     reviewsList.innerHTML = '';
 
-    // Real Google Maps reviews for Brew Butterfly Cafe
-    var reviews = [
-      {
-        name: "Rubina Grg",
-        initials: "RG",
-        stars: 1,
-        color: "var(--amber-deep)",
-        time: "4 weeks ago",
-        text: "This is the worst place I have ever visited in my life. The service is too bad, and the behavior of the waiter is rude and unfriendly. The food and prices are too expensive for the place, and the quality of the food is too bad. I'll not suggest this place to spend quality time."
-      },
-      {
-        name: "Saroj Yonjan",
-        initials: "SY",
-        stars: 5,
-        color: "var(--pea)",
-        time: "a month ago",
-        text: "Good service"
-      },
-      {
-        name: "Aashish Shrestha",
-        initials: "AS",
-        stars: 5,
-        color: "var(--orchid)",
-        time: "2 months ago",
-        text: "Beautiful place"
-      }
-    ];
+    var palette = ['var(--pea)', 'var(--orchid)', 'var(--amber)', 'var(--pea-deep)', 'var(--orchid-bright)'];
 
-    reviews.forEach(function(r){
+    (reviews || []).forEach(function (r, i) {
       var card = document.createElement('div');
       card.className = 'review-card';
 
       var header = document.createElement('div');
-      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;';
+      header.className = 'review-card-header';
 
       var identity = document.createElement('div');
-      identity.style.cssText = 'display:flex;gap:12px;align-items:center;';
+      identity.className = 'review-card-identity';
 
       var avatar = document.createElement('div');
-      avatar.style.cssText = 'width:40px;height:40px;border-radius:50%;background:' + r.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;';
-      avatar.textContent = r.initials;
+      avatar.className = 'review-card-avatar';
+      avatar.style.background = palette[i % palette.length];
+      avatar.textContent = r.initials || initialsOf(r.name || r.author);
       identity.appendChild(avatar);
 
       var meta = document.createElement('div');
       var nameEl = document.createElement('h5');
-      nameEl.style.cssText = 'margin:0;font-size:15px;';
-      nameEl.textContent = r.name;
+      nameEl.textContent = r.name || r.author || 'Google reviewer';
       var source = document.createElement('span');
-      source.style.cssText = 'font-size:12px;color:rgba(0,0,0,0.5)';
+      source.className = 'review-card-source';
       source.textContent = 'Google Maps review';
       meta.appendChild(nameEl);
       meta.appendChild(source);
       identity.appendChild(meta);
+      header.appendChild(identity);
 
       var starsEl = document.createElement('div');
-      starsEl.style.cssText = 'color:#f2c14e;font-size:14px;';
-      starsEl.textContent = '\u2605'.repeat(r.stars) + '\u2606'.repeat(5 - r.stars);
+      starsEl.className = 'review-card-stars';
+      starsEl.textContent = starsString(r.stars);
       starsEl.setAttribute('aria-label', r.stars + ' out of 5 stars');
-
-      header.appendChild(identity);
       header.appendChild(starsEl);
       card.appendChild(header);
 
       var text = document.createElement('p');
-      text.style.cssText = 'font-size:14.5px;color:rgba(36,31,28,0.75);';
-      text.textContent = r.text;
+      text.className = 'review-card-text';
+      text.textContent = r.text || 'No written review.';
       card.appendChild(text);
 
       var time = document.createElement('div');
-      time.style.cssText = 'margin-top:10px;font-size:12px;color:rgba(0,0,0,0.4);';
-      time.className = 'mono';
-      time.textContent = r.time;
+      time.className = 'review-card-time mono';
+      time.textContent = r.time || 'recently';
       card.appendChild(time);
 
       reviewsList.appendChild(card);
     });
+  }
 
-    if (ratingBars) {
-      ratingBars.innerHTML = '';
-      // Distribution approximating a 3.9 average across 15 reviews
-      var dist = [ {s:5,c:7}, {s:4,c:3}, {s:3,c:1}, {s:2,c:1}, {s:1,c:3} ];
-      var total = 15;
-      dist.forEach(function(d){
-        var pct = Math.round((d.c / total) * 100);
-        var row = document.createElement('div');
-        row.style.cssText = "display:flex;align-items:center;gap:10px;font-size:13px;font-family:'Space Mono',monospace;margin-bottom:8px;";
-        var label = document.createElement('span');
-        label.textContent = d.s + '\u2605';
-        row.appendChild(label);
-
-        var bar = document.createElement('div');
-        bar.style.cssText = 'flex:1;height:8px;background:var(--cream-dim);border-radius:10px;overflow:hidden;';
-        var fill = document.createElement('div');
-        fill.style.cssText = 'height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--pea),var(--orchid));border-radius:10px;';
-        bar.appendChild(fill);
-        row.appendChild(bar);
-
-        var count = document.createElement('span');
-        count.textContent = d.c;
-        row.appendChild(count);
-
-        ratingBars.appendChild(row);
-      });
+  function renderReviewsData(data) {
+    if (!data) return;
+    var dist = data.ratingDistribution || {};
+    var total = data.reviewCount || 0;
+    if (!total || Object.keys(dist).length === 0) {
+      total = (data.reviews || []).length;
     }
+    updateRatingSummary(data);
+    renderRatingBars(dist, total);
+    renderReviewCards(data.reviews);
+  }
+
+  function loadLiveReviews() {
+    var backendUrl;
+    try {
+      backendUrl = window.getBrewButterflyBackendUrl && window.getBrewButterflyBackendUrl();
+    } catch (e) {
+      backendUrl = '';
+    }
+    if (!backendUrl) return;
+
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = setTimeout(function () {
+      if (controller) controller.abort();
+    }, 6000);
+
+    fetch(backendUrl + '/api/public/reviews', {
+      signal: controller ? controller.signal : undefined
+    }).then(function (res) {
+      if (!res.ok) throw new Error('Bad status ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      if (!data || typeof data.rating !== 'number') return;
+      renderReviewsData(data);
+    }).catch(function () {
+      // Live fetch failed — the fallback already rendered stays visible.
+    }).finally(function () {
+      clearTimeout(timer);
+    });
+  }
+
+  function renderReviews() {
+    renderReviewsData(reviewFallback);
+    loadLiveReviews();
   }
 
   /* ---------- EMAIL NOTIFICATION HELPER ---------- */
@@ -557,40 +702,106 @@
     return div.innerHTML;
   }
 
-  /* ---------- TOAST HELPER ---------- */
-  var toastTimer;
-  function showToast(msg){
-    var toast = document.getElementById('toast');
-    var toastText = document.getElementById('toast-text');
-    if (!toast || !toastText) return;
-    toastText.textContent = msg;
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 3200);
+  /* ---------- COUNT-UP NUMBERS ---------- */
+  function animateCount(el){
+    if (!el) return;
+    var raw = el.getAttribute('data-count');
+    var target = raw != null ? Number(raw) : (parseFloat(el.textContent) || 0);
+    var suffix = el.getAttribute('data-suffix') || '';
+    var decimals = raw != null
+      ? Number(el.getAttribute('data-decimals') || 0)
+      : Number(el.getAttribute('data-decimals') || 1);
+
+    if (prefersReduced || isNaN(target)) {
+      el.textContent = target.toFixed(decimals) + suffix;
+      return;
+    }
+
+    var dur = 1400;
+    var t0 = null;
+    function step(ts){
+      if (t0 === null) t0 = ts;
+      var p = Math.min((ts - t0) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = (target * eased).toFixed(decimals) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  var countEls = document.querySelectorAll('.hero-meta .num[data-count], #rating-num');
+  if ('IntersectionObserver' in window) {
+    var countObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          animateCount(entry.target);
+          countObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.4 });
+    countEls.forEach(function (el) { countObserver.observe(el); });
+  } else {
+    countEls.forEach(animateCount);
+  }
+
+  /* ---------- BACK TO TOP ---------- */
+  var toTopBtn = document.getElementById('back-to-top');
+  if (toTopBtn) {
+    toTopBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   /* ---------- NAV & SCROLL REVEAL ---------- */
   var navEl = document.getElementById('site-nav');
-  var backTop = document.getElementById('back-top');
+  var navLinks = document.querySelectorAll('nav.links a[href^="#"]');
+  var spySections = ['home', 'about', 'menu', 'gallery', 'reviews', 'location'];
+
+  function setActiveNav(id) {
+    navLinks.forEach(function (link) {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+    });
+  }
+
   window.addEventListener('scroll', function(){
     if(navEl) navEl.classList.toggle('scrolled', window.scrollY > 40);
-    if(backTop) backTop.classList.toggle('show', window.scrollY > 500);
+    if (progressBar) {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      progressBar.style.transform = 'scaleX(' + (max > 0 ? window.scrollY / max : 0) + ')';
+    }
+    if (toTopBtn) toTopBtn.classList.toggle('show', window.scrollY > 600);
+
+    var current = 'home';
+    spySections.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.getBoundingClientRect().top <= 130) current = id;
+    });
+    setActiveNav(current);
   }, {passive: true});
 
-  if(backTop) backTop.addEventListener('click', function(){ window.scrollTo({top:0, behavior:'smooth'}); });
+  /* ---------- SCROLL PROGRESS BAR ---------- */
+  var progressBar = document.createElement('div');
+  progressBar.className = 'scroll-progress';
+  progressBar.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(progressBar);
 
   var burger = document.getElementById('burger');
   var mobilePanel = document.getElementById('mobile-panel');
+  function setMobileMenu(open){
+    if (!mobilePanel || !burger) return;
+    mobilePanel.classList.toggle('open', open);
+    burger.classList.toggle('open', open);
+    document.body.classList.toggle('lock', open);
+  }
   if(burger && mobilePanel){
     burger.addEventListener('click', function(){
-      var open = mobilePanel.classList.toggle('open');
-      burger.classList.toggle('open', open);
+      setMobileMenu(!mobilePanel.classList.contains('open'));
     });
     mobilePanel.querySelectorAll('a').forEach(function(a){
-      a.addEventListener('click', function(){
-        mobilePanel.classList.remove('open');
-        burger.classList.remove('open');
-      });
+      a.addEventListener('click', function(){ setMobileMenu(false); });
+    });
+    window.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') setMobileMenu(false);
     });
   }
 
@@ -605,6 +816,11 @@
   }, {threshold: 0.1});
   revealEls.forEach(function(el){ io.observe(el); });
 
+  // Fallback — never leave content hidden when IO is unavailable
+  if (!('IntersectionObserver' in window)) {
+    revealEls.forEach(function(el){ el.classList.add('in'); });
+  }
+
   // Listen for Store changes from Admin panel
   window.addEventListener('cafe_store_updated', function(){
     renderMenu();
@@ -616,6 +832,66 @@
     document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
   }
 
+  /* ---------- LIVE MENU (admin edits appear automatically) ---------- */
+  var menuSignature = '';
+
+  function backendBaseUrl(){
+    try {
+      var url = window.getBrewButterflyBackendUrl && window.getBrewButterflyBackendUrl();
+      if (url) return url;
+    } catch (e) { /* fall through */ }
+    return 'https://brew-butterfly-cafe-1.onrender.com';
+  }
+
+  // Cheap fingerprint — enough to detect admin edits without hashing the
+  // full (potentially base64-heavy) payload on every poll.
+  function menuSignatureOf(items){
+    return (items || []).map(function(m){
+      var p = String(m.photo || '');
+      return [m.id, m.name, m.price, p.length, p.slice(0, 12), p.slice(-8),
+        m.inStock, m.featured, m.veg, m.cat, (m.desc || '').length].join('|');
+    }).join('~');
+  }
+
+  function applyRemoteMenu(items){
+    var sig = menuSignatureOf(items);
+    if (sig === menuSignature) return false;
+    menuSignature = sig;
+    remoteMenu = items;
+    renderMenu();
+    renderShowcase();
+    init3DEffects();
+    return true;
+  }
+
+  function fetchRemoteMenu(){
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (controller) controller.abort(); }, 8000);
+
+    return fetch(backendBaseUrl() + '/api/menu', {
+      signal: controller ? controller.signal : undefined
+    }).then(function(res){
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('Bad status ' + res.status);
+      return res.json();
+    }).then(function(items){
+      if (Array.isArray(items) && items.length) applyRemoteMenu(items);
+      return true;
+    }).catch(function(){
+      clearTimeout(timer);
+      return false;
+    });
+  }
+
+  // Initial fetch on load, then lightweight polling so admin photo updates
+  // flow through to the menu without a manual refresh.
+  fetchRemoteMenu();
+  setInterval(fetchRemoteMenu, 45000);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') fetchRemoteMenu();
+  });
+  window.addEventListener('focus', function () { fetchRemoteMenu(); });
+
   // Initial Boot
   renderMenu();
   renderShowcase();
@@ -623,5 +899,6 @@
   renderReviews();
   observeReveals();
   setTimeout(init3DEffects, 100);
+  setTimeout(initHeroParallax, 100);
 
 })();
