@@ -1,13 +1,4 @@
-/* ==========================================================================
-   BREW BUTTERFLY CAFE — SECURE ADMIN API & AUTH INTEGRATION
-   JWT Login, Cookie Session, Password Updates, and API Sync.
 
-   Security notes:
-   - The JWT is stored in sessionStorage (cleared when the tab closes)
-     instead of localStorage. The authoritative session is the httpOnly
-     cookie set by the backend, so the token is only a request helper.
-   - Any 401 response forces re-login.
-   ========================================================================== */
 
 (function () {
   'use strict';
@@ -221,9 +212,13 @@
       }
 
       var loginBtn = document.getElementById('login-btn');
+      var loginLabel = loginBtn ? loginBtn.querySelector('.login-submit__label') : null;
       if (loginBtn) {
         loginBtn.disabled = true;
-        loginBtn.textContent = 'Verifying...';
+        loginBtn.classList.add('is-loading');
+      }
+      if (loginLabel) {
+        loginLabel.textContent = 'Verifying...';
       }
       hideError();
 
@@ -256,9 +251,27 @@
         .finally(function () {
           if (loginBtn) {
             loginBtn.disabled = false;
-            loginBtn.textContent = 'Sign In';
+            loginBtn.classList.remove('is-loading');
+          }
+          if (loginLabel) {
+            loginLabel.textContent = 'Sign In';
           }
         });
+    });
+  }
+
+  /* ---------- PASSWORD VISIBILITY TOGGLE ---------- */
+
+  var togglePasswordBtn = document.getElementById('toggle-password');
+  if (togglePasswordBtn) {
+    togglePasswordBtn.addEventListener('click', function () {
+      var passwordInput = document.getElementById('login-password');
+      if (!passwordInput) return;
+      var isHidden = passwordInput.type === 'password';
+      passwordInput.type = isHidden ? 'text' : 'password';
+      togglePasswordBtn.classList.toggle('is-visible', isHidden);
+      togglePasswordBtn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      passwordInput.focus();
     });
   }
 
