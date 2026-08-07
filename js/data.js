@@ -1,7 +1,3 @@
-/* ==========================================================================
-   Brew Butterfly Cafe — Menu, Categories, Gallery & Seed Data
-   Full menu as of the official cafe menu (August 2026).
-   ========================================================================== */
 
 window.DEFAULT_CAFE_DATA = {
   cafeInfo: {
@@ -10,11 +6,11 @@ window.DEFAULT_CAFE_DATA = {
     location: "Tejbinayak, Baimal Marga, Kathmandu",
     phone: "974-4569611",
     hours: "Daily, 8:00 AM – 8:00 PM",
-    rating: 3.9,
-    reviewCount: 15,
+    rating: 4.0,
+    reviewCount: 16,
     priceRange: "Rs 500 – 2,500 per person",
-    heroBg: "assets/photos/hero-bg.jpg",
-    aboutBg: "assets/cafe-lounge.jpg"
+    heroBg: "assets/cafe-bg.jpg",
+    aboutBg: "assets/cafe-lounge.jpeg"
   },
 
   categories: [
@@ -40,7 +36,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Boiled Egg",
       price: 40,
       desc: "Perfectly boiled eggs served with a sprinkle of black pepper and salt.",
-      photo: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/boiled-egg.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -51,7 +47,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Chana",
       price: 50,
       desc: "Flavourful spiced chickpea bowl, a hearty and healthy start to the day.",
-      photo: "https://images.unsplash.com/photo-1515543904379-3d757afe72e4?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/chana-tarkari.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -86,7 +82,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Double Chicken Burger",
       price: 200,
       desc: "Twin chicken patties, melted cheese, lettuce, tomato and our signature sauce.",
-      photo: "assets/photos/double-chicken-burger.jpg",
+      photo: "assets/food/burger-double.jpg",
       veg: false,
       featured: true,
       inStock: true
@@ -99,7 +95,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Buff Chowmein",
       price: 160,
       desc: "Wok-tossed noodles with spiced buff chunks, cabbage and dark soy sauce.",
-      photo: "assets/spiced-chowmein.jpg",
+      photo: "assets/food/chowmein-buff.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -110,7 +106,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Chicken Chowmein",
       price: 180,
       desc: "Stir-fried noodles with tender chicken strips and garden vegetables.",
-      photo: "assets/photos/chicken-chowmein.jpg",
+      photo: "assets/food/chowmein-chicken.jpg",
       veg: false,
       featured: true,
       inStock: true
@@ -121,7 +117,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Veg Chowmein",
       price: 130,
       desc: "Fresh vegetable noodles tossed on high heat with a smoky soy finish.",
-      photo: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/chowmein-veg.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -134,7 +130,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "24 Carat Surya",
       price: 30,
       desc: "Classic Surya in the premium 24 Carat pack.",
-      photo: "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/cigarettes-pack-1.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -145,7 +141,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Fusion",
       price: 30,
       desc: "Smooth and mellow Surya Fusion stick.",
-      photo: "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/cigarettes-pack-2.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -156,7 +152,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Shikhar Ice",
       price: 30,
       desc: "Fresh menthol blast with a crisp Shikhar Ice finish.",
-      photo: "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/cigarettes-pack-1.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -167,7 +163,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Surya Light",
       price: 30,
       desc: "Light blend Surya with a softer, smoother draw.",
-      photo: "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/cigarettes-pack-2.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -178,7 +174,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Surya Red",
       price: 35,
       desc: "Full-flavoured Surya Red for a richer smoke.",
-      photo: "https://images.unsplash.com/photo-1595341888016-a392ef81b7de?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/cigarettes-pack-1.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -202,7 +198,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Cold Coffee",
       price: 150,
       desc: "Creamy blended iced coffee, topped with a frothy finish.",
-      photo: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/cold-coffee.jpg",
       veg: true,
       featured: true,
       inStock: true
@@ -213,7 +209,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Fanta",
       price: 70,
       desc: "Zesty, fizzy orange Fanta served ice cold.",
-      photo: "https://images.unsplash.com/photo-1581006852262-e4307cf6283a?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/fanta-orange.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -224,7 +220,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Peach Iced",
       price: 150,
       desc: "Refreshing peach iced tea over a tall glass of ice.",
-      photo: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/peach-iced.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -235,7 +231,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Sprite",
       price: 70,
       desc: "Crisp, lemon-lime Sprite served with plenty of ice.",
-      photo: "https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/sprite.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -248,7 +244,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Red Bull 220ml",
       price: 130,
       desc: "Original Red Bull Energy Drink, 220ml can.",
-      photo: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/redbull-can.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -259,7 +255,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Red Bull 330ml",
       price: 150,
       desc: "Bigger 330ml can of original Red Bull for a longer lift.",
-      photo: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/redbull-cans.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -270,7 +266,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Xtreme",
       price: 145,
       desc: "High-voltage Xtreme energy drink, 250ml.",
-      photo: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/xtreme-energy.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -305,7 +301,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Cloud Icy Mango",
       price: 500,
       desc: "Chilled mango shisha with heavy clouds and a menthol finish.",
-      photo: "assets/photos/cloud-mango-hookah.jpg",
+      photo: "assets/cloud-hookah.jpg",
       veg: false,
       featured: true,
       inStock: true
@@ -316,7 +312,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Cloud Lady Killer",
       price: 500,
       desc: "Bold fruity blend with an intense, flavour-packed cloud.",
-      photo: "assets/photos/cloud-mango-hookah.jpg",
+      photo: "assets/cloud-hookah.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -327,7 +323,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Cloud Mango",
       price: 400,
       desc: "Sweet ripe mango cloud hookah, rich and smooth.",
-      photo: "assets/photos/cloud-mango-hookah.jpg",
+      photo: "assets/cloud-hookah.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -349,7 +345,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Cloud Mix Favor",
       price: 500,
       desc: "Custom mixed-favour cloud session — ask our hookah master.",
-      photo: "assets/photos/cloud-mango-hookah.jpg",
+      photo: "assets/cloud-hookah.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -360,7 +356,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Cloud Strawberry",
       price: 500,
       desc: "Juicy strawberry cloud hookah with a sweet aroma.",
-      photo: "assets/photos/cloud-mango-hookah.jpg",
+      photo: "assets/cloud-hookah.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -393,7 +389,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Icy Mango (Normal)",
       price: 450,
       desc: "Menthol-chilled mango on a regular hookah setup.",
-      photo: "assets/photos/cloud-mango-hookah.jpg",
+      photo: "assets/cloud-hookah.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -404,7 +400,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Mango (Normal)",
       price: 350,
       desc: "Sweet mango flavour on a regular hookah setup.",
-      photo: "assets/photos/cloud-mango-hookah.jpg",
+      photo: "assets/cloud-hookah.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -426,7 +422,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Normal Lady Killer",
       price: 400,
       desc: "The infamous Lady Killer blend on a regular setup.",
-      photo: "assets/photos/cloud-mango-hookah.jpg",
+      photo: "assets/cloud-hookah.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -450,7 +446,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Banana Lassi",
       price: 140,
       desc: "Rich thick curd blended with fresh banana and a touch of sweetness.",
-      photo: "assets/photos/banana-lassi.jpg",
+      photo: "assets/special-lassi.jpg",
       veg: true,
       featured: true,
       inStock: true
@@ -461,7 +457,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Plain Lassi",
       price: 110,
       desc: "Traditional creamy yoghurt lassi, lightly salted or sweet on request.",
-      photo: "https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/lassi-plain.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -485,7 +481,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "C Chicken Momo",
       price: 200,
       desc: "Chicken dumplings tossed in rich sweet-and-spicy chilli sauce with peppers.",
-      photo: "assets/kurkure-momo.jpg",
+      photo: "assets/food/momo-chilli.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -496,7 +492,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "C. Buff Momo",
       price: 180,
       desc: "Buff momo wok-tossed in a garlic chilli gravy.",
-      photo: "assets/photos/chicken-kurkure-momo.jpg",
+      photo: "assets/food/momo-chilli.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -507,7 +503,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Chicken Kurkure Momo",
       price: 240,
       desc: "Crunchy double-coated fried chicken dumplings with spicy tomato chutney.",
-      photo: "assets/photos/chicken-kurkure-momo.jpg",
+      photo: "assets/kurkure-momo.jpg",
       veg: false,
       featured: true,
       inStock: true
@@ -529,7 +525,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Steam Chicken Momo",
       price: 180,
       desc: "Juicy minced chicken steamed in paper-thin dough with local herbs.",
-      photo: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/momo-steam-chicken.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -540,7 +536,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Steam Buff Momo",
       price: 160,
       desc: "Classic steamed buff momo packed with a traditional Nepali spice mix.",
-      photo: "https://images.unsplash.com/photo-1625220194771-7ebdea0b70b9?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/momo-steam-buff.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -553,7 +549,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Buff Sausage",
       price: 50,
       desc: "Grilled spiced buff sausage, served hot with a side of chutney.",
-      photo: "https://images.unsplash.com/photo-1600891964092-4316c288032e?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/sausage-grill.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -564,7 +560,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Chau Chau Sadheko",
       price: 85,
       desc: "Spicy wok-tossed noodles with onion, tomato and a fiery kick.",
-      photo: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/noodles-sadheko.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -575,7 +571,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Chicken Lollipop",
       price: 120,
       desc: "Crispy golden chicken lollipops tossed in a tangy chilli glaze.",
-      photo: "assets/photos/chicken-lollipop.jpg",
+      photo: "assets/food/chicken-lollipop.jpg",
       veg: false,
       featured: true,
       inStock: true
@@ -586,7 +582,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Chicken Sausage",
       price: 60,
       desc: "Juicy grilled chicken sausage with house seasoning.",
-      photo: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/sausage-grill.jpg",
       veg: false,
       featured: false,
       inStock: true
@@ -597,7 +593,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Peanut Sadheko",
       price: 100,
       desc: "Spiced roasted peanuts tossed with onion, chilli and coriander.",
-      photo: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/peanut-sadheko.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -610,7 +606,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Butterfly Pea Tea",
       price: 180,
       desc: "Signature indigo-blue tea brewed from butterfly pea flowers. Add lemon to watch it turn violet.",
-      photo: "assets/photos/butterfly-tea.jpg",
+      photo: "assets/butterfly-pea-tea.jpg",
       veg: true,
       featured: true,
       inStock: true
@@ -621,7 +617,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Egg Burger",
       price: 80,
       desc: "Toasted bun with a fresh fried egg, cheese slice and house spices.",
-      photo: "assets/photos/egg-burger.jpg",
+      photo: "assets/food/egg-burger.jpg",
       veg: false,
       featured: true,
       inStock: true
@@ -634,7 +630,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Black Coffee",
       price: 50,
       desc: "Dark roast brewed black — bold, clean and sugar-free.",
-      photo: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/artisanal-coffee.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -645,7 +641,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Black Tea",
       price: 30,
       desc: "Strong classic black tea, served hot and refreshing.",
-      photo: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/black-tea.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -656,7 +652,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Hot With Honey And Ginger",
       price: 100,
       desc: "Soothing ginger infusion sweetened with pure mountain honey.",
-      photo: "https://images.unsplash.com/photo-1584305574647-0cc949a2bb9f?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/honey-ginger-tea.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -667,7 +663,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Hot Lemon",
       price: 40,
       desc: "Freshly squeezed lemon in hot water — simple and healthy.",
-      photo: "https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/hot-lemon.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -678,7 +674,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Hot Lemon With Honey",
       price: 80,
       desc: "Warm lemon water sweetened with organic wild honey.",
-      photo: "https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/hot-lemon-honey.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -689,7 +685,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Lemon Tea",
       price: 40,
       desc: "Bright citrus tea with a fresh lemon squeeze.",
-      photo: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/lemon-tea.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -700,7 +696,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Masala Tea",
       price: 55,
       desc: "Rich milk tea infused with cardamom, ginger, cloves and cinnamon.",
-      photo: "assets/photos/masala-tea.jpg",
+      photo: "https://images.unsplash.com/photo-1571934811356-5cc061b6821f?auto=format&fit=crop&w=600&q=80",
       veg: true,
       featured: true,
       inStock: true
@@ -733,7 +729,7 @@ window.DEFAULT_CAFE_DATA = {
       name: "Peach Tea",
       price: 70,
       desc: "Fragrant peach-flavoured tea served steaming hot.",
-      photo: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=600&q=80",
+      photo: "assets/food/peach-tea.jpg",
       veg: true,
       featured: false,
       inStock: true
@@ -750,59 +746,32 @@ window.DEFAULT_CAFE_DATA = {
     {
       id: "g-2",
       title: "Cafe Interior",
-      src: "assets/photos/cafe-interior.jpg",
+      src: "assets/cafe-lounge.jpeg",
       desc: "Cozy interior spot perfect for afternoon tea and evening hookah."
     },
     {
       id: "g-3",
       title: "Cafe Exterior",
-      src: "assets/photos/cafe-exterior.jpg",
+      src: "assets/cafe-vibe.jpg",
       desc: "Brew Butterfly Cafe along Baimal Marga, Kathmandu."
     },
     {
       id: "g-4",
       title: "Signature Butterfly Pea Tea",
-      src: "assets/photos/butterfly-tea.jpg",
+      src: "assets/butterfly-pea-tea.jpg",
       desc: "Steeped indigo blue tea blooming into deep purple."
     },
     {
       id: "g-5",
       title: "Crispy Kurkure Momo Platter",
-      src: "assets/photos/chicken-kurkure-momo.jpg",
+      src: "assets/kurkure-momo.jpg",
       desc: "Golden crunchy dumplings served hot with homemade chutneys."
     },
     {
       id: "g-6",
       title: "Cloud Hookah Session",
-      src: "assets/photos/cloud-mango-hookah.jpg",
+      src: "assets/cloud-hookah.jpg",
       desc: "Smooth flavored cloud hookah setup for relaxing evenings."
-    }
-  ],
-
-  sampleReservations: [
-    {
-      id: "BBC-948201",
-      name: "Rohan Shrestha",
-      phone: "9841234567",
-      guests: 4,
-      date: "2026-08-05",
-      time: "6:00 PM",
-      occasion: "Friends hangout",
-      notes: "Window seat, 1 Icy Mango Hookah",
-      status: "Confirmed",
-      created: "2026-08-03"
-    },
-    {
-      id: "BBC-883192",
-      name: "Anjali Thapa",
-      phone: "9808765432",
-      guests: 2,
-      date: "2026-08-04",
-      time: "2:00 PM",
-      occasion: "Birthday",
-      notes: "Please arrange Butterfly Pea Tea on arrival",
-      status: "Pending",
-      created: "2026-08-03"
     }
   ]
 };
