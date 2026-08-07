@@ -2,10 +2,10 @@
 (function(window){
   "use strict";
 
-  var STORE_KEY_MENU = "bbc_menu_items_v2";
-  var STORE_KEY_RES = "bbc_reservations_v2";
-  var STORE_KEY_CATEGORIES = "bbc_categories_v2";
-  var STORE_KEY_SETTINGS = "bbc_settings_v2";
+  var STORE_KEY_MENU = "bbc_menu_items_v3";
+  var STORE_KEY_RES = "bbc_reservations_v3";
+  var STORE_KEY_CATEGORIES = "bbc_categories_v3";
+  var STORE_KEY_SETTINGS = "bbc_settings_v3";
 
   var Store = {
     // Initialize data if not already present
