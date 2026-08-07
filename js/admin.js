@@ -67,6 +67,14 @@
     return CATEGORY_NAMES[catId] || catId;
   }
 
+  /* ---------- IMAGE FALLBACK ---------- */
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== 'IMG' || img.dataset.fbk) return;
+    img.dataset.fbk = '1';
+    img.src = '../assets/cafe-vibe.jpg';
+  }, true);
+
   /* ---------- SAFE HELPERS ---------- */
   function safe(str) {
     if (str == null) return '';
@@ -93,7 +101,7 @@
 
   /* ---------- PHOTO FALLBACK ---------- */
   function fallbackPhoto() {
-    return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80';
+    return '../assets/cafe-vibe.jpg';
   }
 
   /* ---------- STATS ---------- */
@@ -409,6 +417,7 @@
       if (itemForm) itemForm.reset();
       var instockEl = document.getElementById('field-instock');
       if (instockEl) instockEl.checked = true;
+      resetUploadUi();
       updateImagePreview();
       if (itemModal) itemModal.classList.add('open');
     }
@@ -425,6 +434,7 @@
     document.getElementById('field-featured').checked = !!item.featured;
     var stockEl = document.getElementById('field-instock');
     if (stockEl) stockEl.checked = item.inStock !== false;
+    resetUploadUi();
     updateImagePreview();
     if (itemModal) itemModal.classList.add('open');
   }
@@ -466,6 +476,75 @@
 
   if (photoInput) photoInput.addEventListener('input', updateImagePreview);
 
+  /* ---------- FILE UPLOAD (resize → base64 data URL) ---------- */
+  var uploadBtn = document.getElementById('btn-upload-photo');
+  var uploadFileInput = document.getElementById('field-upload-file');
+  var uploadHint = document.getElementById('upload-hint');
+
+  function fileToImage(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () { resolve(img); };
+        img.onerror = function () { reject(new Error('Could not read that image.')); };
+        img.src = e.target.result;
+      };
+      reader.onerror = function () { reject(new Error('Could not read that file.')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function compressImage(img, maxDim, quality) {
+    var width = img.naturalWidth || 0;
+    var height = img.naturalHeight || 0;
+    if (!width || !height) throw new Error('Could not read that image.');
+    var scale = 1;
+    if (width > maxDim || height > maxDim) {
+      scale = maxDim / Math.max(width, height);
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', quality);
+  }
+
+  function resetUploadUi() {
+    if (uploadFileInput) uploadFileInput.value = '';
+    if (uploadHint) uploadHint.textContent = '';
+  }
+
+  if (uploadBtn && uploadFileInput) {
+    uploadBtn.addEventListener('click', function () { uploadFileInput.click(); });
+
+    uploadFileInput.addEventListener('change', function () {
+      var file = uploadFileInput.files && uploadFileInput.files[0];
+      if (!file) return;
+
+      if (file.size > 8 * 1024 * 1024) {
+        toast('That image is larger than 8 MB. Please choose a smaller photo.', 'error');
+        resetUploadUi();
+        return;
+      }
+
+      fileToImage(file).then(function (img) {
+        var dataUrl = compressImage(img, 900, 0.72);
+        if (photoInput) {
+          photoInput.value = dataUrl;
+        }
+        if (uploadHint) {
+          uploadHint.textContent = 'Photo attached (' + Math.round(dataUrl.length / 1024) + ' KB). Save the item to publish it.';
+        }
+        updateImagePreview();
+      }).catch(function (err) {
+        toast(err && err.message ? err.message : 'Could not process that image.', 'error');
+        resetUploadUi();
+      });
+    });
+  }
+
   var btnAddItem = document.getElementById('btn-add-item');
   if (btnAddItem) btnAddItem.addEventListener('click', function () { openItemModal(null); });
 
@@ -482,26 +561,46 @@
   /* ---------- PRESET PHOTO PICKER (local assets + curated defaults) ---------- */
   if (presetContainer) {
     var presets = [
-      { name: 'Boiled Egg', url: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=600&q=80' },
+      { name: 'Boiled Egg', url: '../assets/food/boiled-egg.jpg' },
       { name: 'Omelette', url: 'https://images.unsplash.com/photo-1510693206972-df098062cb71?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Chana', url: 'https://images.unsplash.com/photo-1515543904379-3d757afe72e4?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Chicken Burger', url: '../assets/gourmet-burger.jpg' },
-      { name: 'Double Burger', url: '../assets/photos/double-chicken-burger.jpg' },
-      { name: 'Chowmein', url: '../assets/photos/chicken-chowmein.jpg' },
-      { name: 'Veg Chowmein', url: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=600&q=80' },
+      { name: 'Chana', url: '../assets/food/chana-tarkari.jpg' },
+      { name: 'Chicken Burger', url: '../assets/food/burger-chicken.jpg' },
+      { name: 'Double Burger', url: '../assets/food/burger-double.jpg' },
+      { name: 'Buff Chowmein', url: '../assets/food/chowmein-buff.jpg' },
+      { name: 'Chicken Chowmein', url: '../assets/food/chowmein-chicken.jpg' },
+      { name: 'Veg Chowmein', url: '../assets/food/chowmein-veg.jpg' },
       { name: 'Coke', url: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Cold Coffee', url: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Red Bull', url: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Hookah Cloud', url: '../assets/photos/cloud-mango-hookah.jpg' },
+      { name: 'Cold Coffee', url: '../assets/food/cold-coffee.jpg' },
+      { name: 'Fanta', url: '../assets/food/fanta-orange.jpg' },
+      { name: 'Sprite', url: '../assets/food/sprite.jpg' },
+      { name: 'Red Bull 220ml', url: '../assets/food/redbull-can.jpg' },
+      { name: 'Red Bull 330ml', url: '../assets/food/redbull-cans.jpg' },
+      { name: 'Hookah Cloud', url: '../assets/cloud-hookah.jpg' },
       { name: 'Hookah Classic', url: '../assets/cloud-hookah.jpg' },
-      { name: 'Banana Lassi', url: '../assets/photos/banana-lassi.jpg' },
+      { name: 'Banana Lassi', url: '../assets/special-lassi.jpg' },
       { name: 'Sweet Lassi', url: '../assets/special-lassi.jpg' },
-      { name: 'Kurkure Momo', url: '../assets/photos/chicken-kurkure-momo.jpg' },
-      { name: 'Steam Momo', url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80' },
-      { name: 'Lollipop', url: '../assets/photos/chicken-lollipop.jpg' },
-      { name: 'Butterfly Tea', url: '../assets/photos/butterfly-tea.jpg' },
-      { name: 'Egg Burger', url: '../assets/photos/egg-burger.jpg' },
-      { name: 'Masala Tea', url: '../assets/photos/masala-tea.jpg' },
+      { name: 'Plain Lassi', url: '../assets/food/lassi-plain.jpg' },
+      { name: 'Kurkure Momo', url: '../assets/kurkure-momo.jpg' },
+      { name: 'Steam Momo', url: '../assets/food/momo-steam-chicken.jpg' },
+      { name: 'Steam Buff Momo', url: '../assets/food/momo-steam-buff.jpg' },
+      { name: 'Chicken Lollipop', url: '../assets/food/chicken-lollipop.jpg' },
+      { name: 'Cigarette Pack', url: '../assets/food/cigarettes-pack-1.jpg' },
+      { name: 'Cigarette Pack 2', url: '../assets/food/cigarettes-pack-2.jpg' },
+      { name: 'Butterfly Tea', url: '../assets/butterfly-pea-tea.jpg' },
+      { name: 'Egg Burger', url: '../assets/food/egg-burger.jpg' },
+      { name: 'Grilled Sausage', url: '../assets/food/sausage-grill.jpg' },
+      { name: 'Noodles Sadheko', url: '../assets/food/noodles-sadheko.jpg' },
+      { name: 'Peanut Sadheko', url: '../assets/food/peanut-sadheko.jpg' },
+      { name: 'Chilli Momo', url: '../assets/food/momo-chilli.jpg' },
+      { name: 'Peach Iced Tea', url: '../assets/food/peach-iced.jpg' },
+      { name: 'Black Tea', url: '../assets/food/black-tea.jpg' },
+      { name: 'Hot Lemon', url: '../assets/food/hot-lemon.jpg' },
+      { name: 'Hot Lemon Honey', url: '../assets/food/hot-lemon-honey.jpg' },
+      { name: 'Lemon Tea', url: '../assets/food/lemon-tea.jpg' },
+      { name: 'Honey Ginger', url: '../assets/food/honey-ginger-tea.jpg' },
+      { name: 'Peach Tea', url: '../assets/food/peach-tea.jpg' },
+      { name: 'Xtreme', url: '../assets/food/xtreme-energy.jpg' },
+      { name: 'Masala Tea', url: 'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?auto=format&fit=crop&w=600&q=80' },
       { name: 'Coffee', url: '../assets/artisanal-coffee.jpg' }
     ];
 
@@ -640,3 +739,4 @@
   /* ---------- INITIAL BOOT ---------- */
   renderAll();
 })();
+
