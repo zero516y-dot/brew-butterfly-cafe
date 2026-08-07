@@ -84,6 +84,144 @@ async function testDatabase() {
 }
 
 /* ==========================================================================
+   FULL MENU SEED (matches the public JS menu)
+   ========================================================================== */
+
+const MENU_SEED = [
+  // Breakfast
+  ['bk-boiled-egg', 'breakfast', 'Boiled Egg', 40, 'Perfectly boiled eggs with pepper and salt.'],
+  ['bk-chana', 'breakfast', 'Chana', 50, 'Flavourful spiced chickpea bowl.', true],
+  ['bk-plain-omlette', 'breakfast', 'Plain Omlette', 50, 'Soft fluffy three-egg omelette.'],
+  // Burger
+  ['bg-chicken-burger', 'burger', 'Chicken Burger', 150, 'Juicy chicken patty with house mayonnaise.'],
+  ['bg-double-chicken-burger', 'burger', 'Double Chicken Burger', 200, 'Twin patties, cheese, lettuce and signature sauce.', false, true],
+  // Chowmein
+  ['cm-buff', 'chowmein', 'Buff Chowmein', 160, 'Wok-tossed noodles with spiced buff chunks.'],
+  ['cm-chicken', 'chowmein', 'Chicken Chowmein', 180, 'Stir-fried noodles with tender chicken strips.', false, true],
+  ['cm-veg', 'chowmein', 'Veg Chowmein', 130, 'Fresh vegetable noodles tossed on high heat.', true],
+  // Cigarettes
+  ['cig-24-carat-surya', 'cigarettes', '24 Carat Surya', 30, 'Classic Surya premium pack.'],
+  ['cig-fusion', 'cigarettes', 'Fusion', 30, 'Smooth Surya Fusion stick.'],
+  ['cig-shikhar-ice', 'cigarettes', 'Shikhar Ice', 30, 'Fresh menthol Shikhar Ice.'],
+  ['cig-surya-light', 'cigarettes', 'Surya Light', 30, 'Light, smoother blend.'],
+  ['cig-surya-red', 'cigarettes', 'Surya Red', 35, 'Full-flavoured Surya Red.'],
+  // Cold Drinks
+  ['cd-coke', 'cold-drinks', 'Coke', 70, 'Ice-cold classic Coca-Cola.'],
+  ['cd-cold-coffee', 'cold-drinks', 'Cold Coffee', 150, 'Creamy blended iced coffee.', true, true],
+  ['cd-fanta', 'cold-drinks', 'Fanta', 70, 'Zesty fizzy orange Fanta.'],
+  ['cd-peach-iced', 'cold-drinks', 'Peach Iced', 150, 'Refreshing peach iced tea.'],
+  ['cd-sprite', 'cold-drinks', 'Sprite', 70, 'Crisp lemon-lime Sprite.'],
+  // Energy
+  ['en-redbull-220', 'energy', 'Red Bull 220ml', 130, 'Original Red Bull, 220ml.'],
+  ['en-redbull-330', 'energy', 'Red Bull 330ml', 150, 'Original Red Bull, 330ml.'],
+  ['en-xtreme', 'energy', 'Xtreme', 145, 'High-voltage Xtreme energy drink.'],
+  // Hookah
+  ['hk-cloud-coil', 'hookah', 'Cloud Coil', 70, 'Quick cloud session, smooth pull.'],
+  ['hk-cloud-double-apple', 'hookah', 'Cloud Double Apple', 400, 'Classic sweet anise double apple.'],
+  ['hk-cloud-icy-mango', 'hookah', 'Cloud Icy Mango', 500, 'Chilled mango shisha with heavy clouds.', false, true],
+  ['hk-cloud-lady-killer', 'hookah', 'Cloud Lady Killer', 500, 'Bold fruity cloud blend.'],
+  ['hk-cloud-mango', 'hookah', 'Cloud Mango', 400, 'Sweet ripe mango cloud hookah.'],
+  ['hk-cloud-mint', 'hookah', 'Cloud Mint', 400, 'Fresh cooling mint cloud.'],
+  ['hk-cloud-mix-favor', 'hookah', 'Cloud Mix Favor', 500, 'Custom mixed-favour cloud session.'],
+  ['hk-cloud-strawberry', 'hookah', 'Cloud Strawberry', 500, 'Juicy strawberry cloud hookah.'],
+  ['hk-double-apple-normal', 'hookah', 'Double Apple (Normal)', 350, 'Timeless double apple, regular setup.'],
+  ['hk-iced-pipe', 'hookah', 'Iced Pipe', 75, 'Cool iced-pipe session.'],
+  ['hk-icy-mango-normal', 'hookah', 'Icy Mango (Normal)', 450, 'Menthol-chilled mango, regular setup.'],
+  ['hk-mango-normal', 'hookah', 'Mango (Normal)', 350, 'Sweet mango, regular setup.'],
+  ['hk-normal-coil', 'hookah', 'Normal Coil', 30, 'Quick regular coil session.'],
+  ['hk-normal-lady-killer', 'hookah', 'Normal Lady Killer', 400, 'Lady Killer blend, regular setup.'],
+  ['hk-normal-mint', 'hookah', 'Normal Mint', 350, 'Pure fresh mint, regular setup.'],
+  // Lassi
+  ['ls-banana', 'lassi', 'Banana Lassi', 140, 'Rich curd blended with fresh banana.', true, true],
+  ['ls-plain', 'lassi', 'Plain Lassi', 110, 'Traditional creamy yoghurt lassi.', true],
+  ['ls-sweet', 'lassi', 'Sweet Lassi', 130, 'Chilled sweetened yoghurt drink.', true],
+  // Momo
+  ['mm-c-chicken', 'momo', 'C Chicken Momo', 200, 'Chicken dumplings in sweet-spicy chilli sauce.'],
+  ['mm-c-buff', 'momo', 'C. Buff Momo', 180, 'Buff momo in garlic chilli gravy.'],
+  ['mm-chicken-kurkure', 'momo', 'Chicken Kurkure Momo', 240, 'Crunchy coated fried chicken momo.', false, true],
+  ['mm-buff-kurkure', 'momo', 'Kurkure Buff Momo', 210, 'Crispy golden kurkure buff momo.'],
+  ['mm-steam-chicken', 'momo', 'Steam Chicken Momo', 180, 'Juicy minced chicken steamed in thin dough.'],
+  ['mm-steam-buff', 'momo', 'Steam Buff Momo', 160, 'Classic steamed buff momo.'],
+  // Snacks
+  ['sn-buff-sausage', 'snacks', 'Buff Sausage', 50, 'Grilled spiced buff sausage.'],
+  ['sn-chau-chau-sadheko', 'snacks', 'Chau Chau Sadheko', 85, 'Spicy wok-tossed noodles.'],
+  ['sn-chicken-lollipop', 'snacks', 'Chicken Lollipop', 120, 'Crispy golden chicken lollipops.', false, true],
+  ['sn-chicken-sausage', 'snacks', 'Chicken Sausage', 60, 'Juicy grilled chicken sausage.'],
+  ['sn-peanut-sadheko', 'snacks', 'Peanut Sadheko', 100, 'Spiced roasted peanuts.', true],
+  // Special
+  ['sp-butterfly-pea-tea', 'special', 'Butterfly Pea Tea', 180, 'Signature colour-shifting butterfly pea tea.', true, true],
+  ['sp-egg-burger', 'special', 'Egg Burger', 80, 'Toasted bun with fried egg and cheese.', false, true],
+  // Tea & Coffee
+  ['tc-black-coffee', 'tea-coffee', 'Black Coffee', 50, 'Dark roast brewed black.', true],
+  ['tc-black-tea', 'tea-coffee', 'Black Tea', 30, 'Strong classic black tea.', true],
+  ['tc-honey-ginger', 'tea-coffee', 'Hot With Honey And Ginger', 100, 'Soothing ginger with mountain honey.', true],
+  ['tc-hot-lemon', 'tea-coffee', 'Hot Lemon', 40, 'Fresh lemon in hot water.', true],
+  ['tc-hot-lemon-honey', 'tea-coffee', 'Hot Lemon With Honey', 80, 'Warm lemon with organic honey.', true],
+  ['tc-lemon-tea', 'tea-coffee', 'Lemon Tea', 40, 'Bright citrus lemon tea.', true],
+  ['tc-masala-tea', 'tea-coffee', 'Masala Tea', 55, 'Milk tea with cardamom, ginger and cinnamon.', true, true],
+  ['tc-milk-coffee', 'tea-coffee', 'Milk Coffee', 90, 'Creamy steamed-milk coffee.', true],
+  ['tc-milk-tea', 'tea-coffee', 'Milk Tea', 40, 'Comforting sweet milk tea.', true],
+  ['tc-peach-tea', 'tea-coffee', 'Peach Tea', 70, 'Fragrant peach tea.', true]
+];
+
+async function seedMenuIfEmpty(client) {
+  const existing = await client.query(`
+    SELECT COUNT(*)::INTEGER AS count
+    FROM menu_items
+  `);
+
+  if (existing.rows[0].count > 0) {
+    console.log(
+      `[DATABASE] Menu already has ${existing.rows[0].count} items; skipping seed.`
+    );
+    return;
+  }
+
+  for (const row of MENU_SEED) {
+    const [
+      id,
+      cat,
+      name,
+      price,
+      desc,
+      veg,
+      featured
+    ] = row;
+
+    await client.query(
+      `
+        INSERT INTO menu_items (
+          id,
+          cat,
+          name,
+          price,
+          description,
+          photo,
+          veg,
+          featured,
+          in_stock
+        )
+        VALUES ($1, $2, $3, $4, $5, '', $6, $7, TRUE)
+        ON CONFLICT (id) DO NOTHING
+      `,
+      [
+        id,
+        cat,
+        name,
+        price,
+        desc || '',
+        Boolean(veg),
+        Boolean(featured)
+      ]
+    );
+  }
+
+  console.log(
+    `[DATABASE] Seeded ${MENU_SEED.length} menu items.`
+  );
+}
+
+/* ==========================================================================
    INITIALIZE DATABASE
    ========================================================================== */
 
@@ -226,8 +364,15 @@ async function initDatabase() {
     `);
 
     /* ----------------------------------------------------------------------
+       SEED FULL MENU
+       ---------------------------------------------------------------------- */
+
+    await seedMenuIfEmpty(client);
+
+    /* ----------------------------------------------------------------------
        ADMIN USER
        ---------------------------------------------------------------------- */
+
 
     const adminUsername = cleanString(
       process.env.ADMIN_USERNAME || 'admin',
