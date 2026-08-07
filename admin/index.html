@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="brew-butterfly-backend-url" content="https://brew-butterfly-cafe-1.onrender.com">
+  <!-- Security Headers via Meta -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self';
+    script-src 'self';
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    img-src 'self' data: https: blob:;
+    font-src 'self' https://fonts.gstatic.com;
+    connect-src 'self' https://brew-butterfly-cafe-1.onrender.com https://*.onrender.com;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Brew Butterfly Cafe — Admin Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -154,7 +167,6 @@
         <h2>Reservations</h2>
         <div class="admin-actions">
           <button id="btn-refresh-res" class="btn-admin btn-admin-secondary">🔄 Refresh</button>
-          <button id="btn-reset-data" class="btn-admin btn-admin-danger">Reset Demo Data</button>
         </div>
       </section>
 
