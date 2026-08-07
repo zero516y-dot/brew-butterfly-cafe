@@ -244,7 +244,7 @@
           window.BbcAdminSession.set(data.token, data.username || username);
           showToast('Welcome back, ' + (data.username || username) + '!', 'success');
             setTimeout(function () {
-    window.location.href = '/admin-dashboard.html';
+    window.location.href = '/admin.html';
   }, 500);
 })
           checkAuth();
