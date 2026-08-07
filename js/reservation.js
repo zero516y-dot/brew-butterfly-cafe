@@ -1,4 +1,4 @@
-/* Brew Butterfly Cafe — production reservation client */
+
 (function () {
   'use strict';
 
@@ -16,15 +16,49 @@
   }
 
   function showToast(message, type) {
-    var toast = document.getElementById('toast');
-    var text = document.getElementById('toast-text');
-    if (!toast || !text) return alert(message);
+    var container = document.getElementById('bbc-toast-stack');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'bbc-toast-stack';
+      container.style.cssText =
+        'position:fixed;bottom:26px;right:26px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:min(360px,calc(100vw - 40px));pointer-events:none;';
+      document.body.appendChild(container);
+    }
+
+    var toast = document.createElement('div');
+    var isError = type === 'error';
+    var accent = isError ? '#ef4444' : '#10b981';
+    toast.style.cssText =
+      'pointer-events:auto;display:flex;align-items:center;gap:10px;padding:13px 16px;border-radius:14px;' +
+      'background:rgba(23,21,20,0.92);color:#fff;font-size:14px;line-height:1.45;font-weight:500;' +
+      'box-shadow:0 12px 34px rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.08);' +
+      'border-left:3px solid ' + accent + ';' +
+      'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);' +
+      'transform:translateY(16px);opacity:0;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s ease;';
+
+    var dot = document.createElement('span');
+    dot.style.cssText =
+      'flex:0 0 auto;width:9px;height:9px;border-radius:50%;background:' + accent + ';box-shadow:0 0 0 3px ' + accent + '33;';
+    var text = document.createElement('span');
     text.textContent = message;
-    toast.className = 'toast show' + (type === 'error' ? ' toast-error' : '');
+
+    toast.appendChild(dot);
+    toast.appendChild(text);
+    container.appendChild(toast);
+
+    requestAnimationFrame(function () {
+      toast.style.transform = 'translateY(0)';
+      toast.style.opacity = '1';
+    });
+
     clearTimeout(toast._timer);
     toast._timer = setTimeout(function () {
-      toast.classList.remove('show');
-    }, 5000);
+      toast.style.transform = 'translateY(16px)';
+      toast.style.opacity = '0';
+      setTimeout(function () {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 380);
+    }, 4200);
   }
 
   async function fetchCsrfToken(force) {
