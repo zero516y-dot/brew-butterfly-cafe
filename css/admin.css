@@ -37,12 +37,26 @@ body.admin-authenticated .admin-shell {
 .login-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 24px;
+  background:
+    radial-gradient(1100px 600px at 15% -10%, rgba(139, 95, 191, 0.35), transparent 60%),
+    radial-gradient(900px 500px at 110% 15%, rgba(52, 87, 166, 0.45), transparent 55%),
+    radial-gradient(700px 700px at 50% 120%, rgba(16, 185, 129, 0.18), transparent 60%),
+    linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #16213e 100%);
+}
+
+.login-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.9), transparent 75%);
+  pointer-events: none;
 }
 
 .login-overlay.hide {
@@ -50,34 +64,61 @@ body.admin-authenticated .admin-shell {
 }
 
 .login-card {
-  width: min(100%, 430px);
-  background: #fff;
-  border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  position: relative;
+  width: min(100%, 420px);
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 24px;
+  padding: 34px 34px 26px;
+  box-shadow:
+    0 30px 80px rgba(2, 6, 23, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  text-align: center;
+  animation: login-card-in 0.45s cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 
-.login-card__brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 22px;
+@keyframes login-card-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
 }
 
-.login-card__icon {
-  width: 48px;
-  height: 48px;
+.login-card__emblem {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 20px;
   background: linear-gradient(135deg, var(--admin-primary), var(--admin-accent));
   color: #fff;
-  font-size: 24px;
+  box-shadow: 0 12px 28px rgba(52, 87, 166, 0.35);
 }
 
-.login-card__brand h2 { margin: 0 0 4px; font-size: 22px; }
-.login-card__brand p { margin: 0; color: var(--admin-muted); }
+.login-card__emblem svg {
+  width: 42px;
+  height: 42px;
+}
 
+.login-card__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--admin-text);
+}
+
+.login-card__subtitle {
+  margin: 4px 0 22px;
+  font-size: 14px;
+  color: var(--admin-muted);
+}
+
+.login-card__footer {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+
+/* Generic form styling (also used by the Change Password form) */
 .login-form label {
   display: block;
   margin-bottom: 7px;
@@ -103,11 +144,147 @@ body.admin-authenticated .admin-shell {
   margin-top: 4px;
 }
 
+.login-card .login-form {
+  text-align: left;
+}
+
+.login-card .login-form label {
+  margin-bottom: 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.login-card .login-form input {
+  height: 48px;
+  padding: 0 44px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--admin-border);
+  background: #f8fafc;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.login-card .login-form input::placeholder {
+  color: #94a3b8;
+}
+
+.login-card .login-form input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(52, 87, 166, 0.14);
+}
+
+.login-field__control {
+  position: relative;
+  display: block;
+}
+
+.login-field__icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  color: var(--admin-muted);
+  pointer-events: none;
+}
+
+.login-field__toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--admin-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s, background 0.2s;
+}
+
+.login-field__toggle:hover {
+  background: #eef2f7;
+  color: var(--admin-text);
+}
+
+.login-field__toggle.is-visible {
+  color: var(--admin-primary);
+}
+
+.login-field__toggle-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.login-submit {
+  position: relative;
+  width: 100%;
+  height: 48px;
+  margin-top: 2px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--admin-primary), var(--admin-accent));
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 12px 24px rgba(52, 87, 166, 0.35);
+  transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+}
+
+.login-submit:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(52, 87, 166, 0.4);
+}
+
+.login-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.login-submit__spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: login-spin 0.7s linear infinite;
+}
+
+.login-submit.is-loading .login-submit__spinner {
+  display: inline-block;
+}
+
+@keyframes login-spin {
+  to { transform: rotate(360deg); }
+}
+
 .login-error {
   min-height: 20px;
-  margin: 12px 0 0;
+  margin: 14px 0 0;
   color: var(--admin-danger);
   font-size: 14px;
+  font-weight: 600;
 }
 
 .backend-badge {
@@ -274,6 +451,8 @@ body.admin-authenticated .admin-shell {
 .modal-footer { padding: 16px 24px; border-top: 1px solid var(--admin-border); background: #f8fafc; display: flex; justify-content: flex-end; gap: 12px; }
 
 /* Preset Photo Picker Buttons */
+.photo-upload-row { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
 .preset-photo-btn {
   display: flex;
   flex-direction: column;
