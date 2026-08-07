@@ -1,9 +1,3 @@
-/* ==========================================================================
-   BREW BUTTERFLY CAFE — ADMIN DASHBOARD LOGIC
-
-   When logged out: shows a locked demo preview (read-only).
-   When logged in: reads/writes exclusively through the backend API.
-   ========================================================================== */
 
 (function () {
   'use strict';
