@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://brewbutterflycafe.vercel.app/</loc>
+    <lastmod>2026-08-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/cafe-bg.jpg</image:loc>
+      <image:title>Brew Butterfly Cafe Lounge in Tejbinayak, Kathmandu</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/cafe-lounge.jpeg</image:loc>
+      <image:title>Brew Butterfly Cafe Interior Lounge</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/cafe-vibe.jpg</image:loc>
+      <image:title>Brew Butterfly Cafe Ambience</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/butterfly-pea-tea.jpg</image:loc>
+      <image:title>Signature Butterfly Pea Tea</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/kurkure-momo.jpg</image:loc>
+      <image:title>Kurkure Momo Platter</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/spiced-chowmein.jpg</image:loc>
+      <image:title>Spiced Chowmein</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/gourmet-burger.jpg</image:loc>
+      <image:title>Gourmet Chicken Burger</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/cloud-hookah.jpg</image:loc>
+      <image:title>Cloud Hookah at Brew Butterfly Cafe</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/special-lassi.jpg</image:loc>
+      <image:title>Sweet Lassi</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://brewbutterflycafe.vercel.app/assets/artisanal-coffee.jpg</image:loc>
+      <image:title>Artisanal Coffee</image:title>
+    </image:image>
+  </url>
+</urlset>
