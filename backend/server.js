@@ -121,6 +121,12 @@ app.use(
   helmet({
     contentSecurityPolicy: false,
 
+    crossOriginEmbedderPolicy: false,
+
+    frameguard: {
+      action: 'deny'
+    },
+
     hsts:
       NODE_ENV === 'production'
         ? {
@@ -135,6 +141,8 @@ app.use(
     }
   })
 );
+
+app.disable('x-powered-by');
 
 /* ==========================================================================
    CORS
@@ -158,10 +166,6 @@ function isAllowedOrigin(origin) {
     const hostname = parsedOrigin.hostname.toLowerCase();
 
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return true;
-    }
-
-    if (hostname === 'vercel.app' || hostname.endsWith('.vercel.app')) {
       return true;
     }
 
@@ -530,6 +534,44 @@ function setAuthCookie(res, token) {
   });
 }
 
+function sanitizePhotoUrl(value) {
+  const raw = String(value || '').trim().slice(0, 2000);
+
+  if (!raw) {
+    return '';
+  }
+
+  if (/^\s*(javascript|data|vbscript):/i.test(raw)) {
+    throw new Error('Photo URL uses a blocked protocol.');
+  }
+
+  if (raw.length > 8) {
+    try {
+      const parsed = new URL(raw);
+
+      if (
+        parsed.protocol !== 'https:' &&
+        parsed.protocol !== 'http:'
+      ) {
+        throw new Error('Photo URL must use http or https.');
+      }
+    } catch (error) {
+      if (error.message === 'Photo URL must use http or https.') {
+        throw error;
+      }
+
+      // Relative local asset paths are allowed (e.g. assets/photo.jpg)
+      if (/^[a-zA-Z0-9_\-./]+$/.test(raw)) {
+        return raw;
+      }
+
+      throw new Error('Photo URL is invalid.');
+    }
+  }
+
+  return raw;
+}
+
 /* ==========================================================================
    ADMIN SESSION
    ========================================================================== */
@@ -744,10 +786,10 @@ app.post(
 );
 
 /* ==========================================================================
-   EMAIL DIAGNOSTICS
+   EMAIL DIAGNOSTICS (admin only)
    ========================================================================== */
 
-app.get('/api/debug/email', async (req, res) => {
+app.get('/api/debug/email', requireAuth, async (req, res) => {
   try {
    const status = await getSmtpStatus();
    return res.json(status);
@@ -935,37 +977,31 @@ app.post(
         );
       }
         } catch (error) {
-  console.error(
-    '[RESERVE] Email failed:',
-    error.message || error
-  );
+        console.error(
+          '[RESERVE] Email failed:',
+          error.message || error
+        );
+      }
 
-  console.error('[EMAIL]', error);
-}
+      /* ----------------------------------------------------------------------
+         RESPONSE
+         ---------------------------------------------------------------------- */
 
-/* ----------------------------------------------------------------------
-   RESPONSE
-   ---------------------------------------------------------------------- */
-    
-    /* ----------------------------------------------------------------------
-       RESPONSE
-       ---------------------------------------------------------------------- */
+      const message = emailSent
+        ? 'Your table has been reserved successfully.'
+        : 'Your reservation was saved, but the email notification could not be sent. Please contact the cafe if you need confirmation.';
 
-    const message = emailSent
-      ? 'Your table has been reserved successfully.'
-      : 'Your reservation was saved, but the email notification could not be sent. Please contact the cafe if you need confirmation.';
+      return res.status(201).json({
+        status: 'ok',
 
-    return res.status(201).json({
-      status: 'ok',
+        reservationId:
+          reservation.id,
 
-      reservationId:
-       reservation.id,
+        emailSent,
 
-      emailSent,
-
-      message
-    });
-  }
+        message
+      });
+    }
 );
 
 
@@ -1178,81 +1214,79 @@ app.post(
   '/api/admin/menu',
   requireAuth,
   async (req, res) => {
-    const {
-      cat,
-      name,
-      price,
-      desc,
-      photo,
-      veg,
-      featured,
-      inStock
-    } = req.body;
-
-    if (
-      !cat ||
-      !name ||
-      price == null
-    ) {
-      return res.status(400).json({
-        error:
-          'cat, name and price are required.'
-      });
-    }
-
-    const numericPrice =
-      Number(price);
-
-    if (
-      !Number.isFinite(
-        numericPrice
-      ) ||
-      numericPrice < 0
-    ) {
-      return res.status(400).json({
-        error:
-          'Price must be a valid positive number.'
-      });
-    }
-
-    const item = {
-      id:
-        `m-${crypto.randomUUID()}`,
-
-      cat:
-        String(cat)
-          .trim()
-          .slice(0, 100),
-
-      name:
-        String(name)
-          .trim()
-          .slice(0, 200),
-
-      price:
-        numericPrice,
-
-      desc:
-        String(desc || '')
-          .trim()
-          .slice(0, 500),
-
-      photo:
-        String(photo || '')
-          .trim()
-          .slice(0, 2000),
-
-      veg:
-        Boolean(veg),
-
-      featured:
-        Boolean(featured),
-
-      inStock:
-        inStock !== false
-    };
-
     try {
+      const {
+        cat,
+        name,
+        price,
+        desc,
+        photo,
+        veg,
+        featured,
+        inStock
+      } = req.body;
+
+      if (
+        !cat ||
+        !name ||
+        price == null
+      ) {
+        return res.status(400).json({
+          error:
+            'cat, name and price are required.'
+        });
+      }
+
+      const numericPrice =
+        Number(price);
+
+      if (
+        !Number.isFinite(
+          numericPrice
+        ) ||
+        numericPrice < 0
+      ) {
+        return res.status(400).json({
+          error:
+            'Price must be a valid positive number.'
+        });
+      }
+
+      const item = {
+        id:
+          `m-${crypto.randomUUID()}`,
+
+        cat:
+          String(cat)
+            .trim()
+            .slice(0, 100),
+
+        name:
+          String(name)
+            .trim()
+            .slice(0, 200),
+
+        price:
+          numericPrice,
+
+        desc:
+          String(desc || '')
+            .trim()
+            .slice(0, 500),
+
+        photo:
+          sanitizePhotoUrl(photo),
+
+        veg:
+          Boolean(veg),
+
+        featured:
+          Boolean(featured),
+
+        inStock:
+          inStock !== false
+      };
+
       return res.status(201).json(
         await menuHelpers.upsert(item)
       );
@@ -1261,6 +1295,15 @@ app.post(
         '[CREATE MENU]',
         error
       );
+
+      if (
+        error.message &&
+        error.message.startsWith('Photo URL')
+      ) {
+        return res.status(400).json({
+          error: error.message
+        });
+      }
 
       return res.status(500).json({
         error:
@@ -1298,6 +1341,10 @@ app.put(
           req.params.id
       };
 
+      if (updated.photo != null) {
+        updated.photo = sanitizePhotoUrl(updated.photo);
+      }
+
       return res.json(
         await menuHelpers.upsert(
           updated
@@ -1308,6 +1355,15 @@ app.put(
         '[UPDATE MENU]',
         error
       );
+
+      if (
+        error.message &&
+        error.message.startsWith('Photo URL')
+      ) {
+        return res.status(400).json({
+          error: error.message
+        });
+      }
 
       return res.status(500).json({
         error:
