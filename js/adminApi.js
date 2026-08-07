@@ -243,6 +243,10 @@
           }
           window.BbcAdminSession.set(data.token, data.username || username);
           showToast('Welcome back, ' + (data.username || username) + '!', 'success');
+            setTimeout(function () {
+    window.location.href = '/admin-dashboard.html';
+  }, 500);
+})
           checkAuth();
         })
         .catch(function (err) {
