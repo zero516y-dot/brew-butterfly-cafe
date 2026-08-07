@@ -755,7 +755,7 @@ const menuHelpers = {
         cleanString(item.name, 200),
         Number(item.price) || 0,
         cleanString(item.desc || item.description, 500),
-        cleanString(item.photo, 2000),
+        cleanString(item.photo, 3000000),
         Boolean(item.veg),
         Boolean(item.featured),
         item.inStock !== false
