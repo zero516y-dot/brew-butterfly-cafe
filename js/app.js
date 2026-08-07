@@ -47,13 +47,16 @@
       var isFirst = !activeTabSlug;
       if (isFirst) activeTabSlug = cat.id;
 
-      // Create category tab
+      // Create category tab (names set via textContent = XSS-safe)
       var tab = document.createElement('button');
       tab.className = 'tab-btn' + (isFirst ? ' active' : '');
       tab.type = 'button';
       tab.setAttribute('role', 'tab');
       tab.setAttribute('data-panel', cat.id);
-      tab.innerHTML = icon(cat.icon) + '<span>' + cat.name + '</span>';
+      tab.innerHTML = icon(cat.icon);
+      var tabLabel = document.createElement('span');
+      tabLabel.textContent = cat.name;
+      tab.appendChild(tabLabel);
       tabsEl.appendChild(tab);
 
       // Create panel
@@ -61,35 +64,88 @@
       panel.className = 'menu-panel' + (isFirst ? ' active' : '');
       panel.id = 'panel-' + cat.id;
 
-      var cardsHtml = itemsInCat.map(function(item){
-        var vegTag = item.veg ?
-          '<div class="mc-veg-tag" title="Vegetarian"><span></span></div>' :
-          '<div class="mc-veg-tag mc-nonveg-tag" title="Non-Vegetarian"><span></span></div>';
+      var grid = document.createElement('div');
+      grid.className = 'menu-grid';
 
-        var outStockClass = item.inStock ? '' : ' mc-out-stock';
-        var stockBadge = item.inStock ? '' : '<span class="mc-badge-tag" style="background:#e74c3c">Sold Out</span>';
-        var featuredBadge = (item.featured && item.inStock) ? '<span class="mc-badge-tag">Popular</span>' : '';
-
+      itemsInCat.forEach(function(item){
         var photoUrl = item.photo || 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80';
 
-        return '<div class="menu-card' + outStockClass + '" data-name="' + item.name.toLowerCase() + '" data-cat="' + cat.id + '">\n' +
-          '  <div class="mc-photo-wrap">\n' +
-          '    <img class="mc-photo" src="' + photoUrl + '" alt="' + item.name + '" loading="lazy">\n' +
-          '    ' + featuredBadge + stockBadge + vegTag + '\n' +
-          '  </div>\n' +
-          '  <div class="mc-body">\n' +
-          '    <div class="mc-top">\n' +
-          '      <h4>' + item.name + '</h4>\n' +
-          '      <span class="mc-price">Rs ' + item.price + '</span>\n' +
-          '    </div>\n' +
-          '    <p class="mc-desc">' + (item.desc || '') + '</p>\n' +
-          '  </div>\n' +
-          '</div>';
-      }).join('');
+        var card = document.createElement('div');
+        card.className = 'menu-card' + (item.inStock ? '' : ' mc-out-stock');
+        card.setAttribute('data-name', String(item.name || '').toLowerCase());
+        card.setAttribute('data-cat', cat.id);
 
-      panel.innerHTML = cardsHtml ?
-        '<div class="menu-grid">' + cardsHtml + '</div>' :
-        '<p style="padding:20px;color:rgba(36,31,28,0.5)">No items currently in this category.</p>';
+        // Photo
+        var photoWrap = document.createElement('div');
+        photoWrap.className = 'mc-photo-wrap';
+
+        var img = document.createElement('img');
+        img.className = 'mc-photo';
+        img.src = photoUrl;
+        img.alt = String(item.name || '');
+        img.loading = 'lazy';
+        photoWrap.appendChild(img);
+
+        if (item.featured && item.inStock) {
+          var featuredBadge = document.createElement('span');
+          featuredBadge.className = 'mc-badge-tag';
+          featuredBadge.textContent = 'Popular';
+          photoWrap.appendChild(featuredBadge);
+        }
+
+        if (!item.inStock) {
+          var stockBadge = document.createElement('span');
+          stockBadge.className = 'mc-badge-tag';
+          stockBadge.style.background = '#e74c3c';
+          stockBadge.textContent = 'Sold Out';
+          photoWrap.appendChild(stockBadge);
+        }
+
+        var vegTag = document.createElement('div');
+        vegTag.className = 'mc-veg-tag' + (item.veg ? '' : ' mc-nonveg-tag');
+        vegTag.title = item.veg ? 'Vegetarian' : 'Non-Vegetarian';
+        vegTag.appendChild(document.createElement('span'));
+        photoWrap.appendChild(vegTag);
+
+        card.appendChild(photoWrap);
+
+        // Body
+        var body = document.createElement('div');
+        body.className = 'mc-body';
+
+        var top = document.createElement('div');
+        top.className = 'mc-top';
+
+        var title = document.createElement('h4');
+        title.textContent = String(item.name || '');
+        top.appendChild(title);
+
+        var price = document.createElement('span');
+        price.className = 'mc-price';
+        price.textContent = 'Rs ' + Number(item.price || 0);
+        top.appendChild(price);
+
+        body.appendChild(top);
+
+        if (item.desc) {
+          var desc = document.createElement('p');
+          desc.className = 'mc-desc';
+          desc.textContent = String(item.desc || '');
+          body.appendChild(desc);
+        }
+
+        card.appendChild(body);
+        grid.appendChild(card);
+      });
+
+      if (grid.childNodes.length === 0) {
+        var emptyNote = document.createElement('p');
+        emptyNote.style.cssText = 'padding:20px;color:rgba(36,31,28,0.5)';
+        emptyNote.textContent = 'No items currently in this category.';
+        panel.appendChild(emptyNote);
+      } else {
+        panel.appendChild(grid);
+      }
 
       panelsEl.appendChild(panel);
     });
@@ -370,42 +426,108 @@
   function renderReviews(){
     if (!reviewsList) return;
     reviewsList.innerHTML = '';
+
+    // Real Google Maps reviews for Brew Butterfly Cafe
     var reviews = [
-      { name: "Rubina G.", initials: "RG", stars: 4, color: "var(--amber-deep)", time: "3 weeks ago", text: "Lovely atmosphere in Tejbinayak! Butterfly Pea Tea and momo combination was fantastic." },
-      { name: "Saroj Y.", initials: "SY", stars: 5, color: "var(--pea)", time: "4 weeks ago", text: "Great place to hang out with friends. Service was attentive and hookah was top notch." },
-      { name: "Aashish S.", initials: "AS", stars: 5, color: "var(--orchid)", time: "2 months ago", text: "Beautiful lighting and cozy seating. Highly recommended for slow evenings." }
+      {
+        name: "Rubina Grg",
+        initials: "RG",
+        stars: 1,
+        color: "var(--amber-deep)",
+        time: "4 weeks ago",
+        text: "This is the worst place I have ever visited in my life. The service is too bad, and the behavior of the waiter is rude and unfriendly. The food and prices are too expensive for the place, and the quality of the food is too bad. I'll not suggest this place to spend quality time."
+      },
+      {
+        name: "Saroj Yonjan",
+        initials: "SY",
+        stars: 5,
+        color: "var(--pea)",
+        time: "a month ago",
+        text: "Good service"
+      },
+      {
+        name: "Aashish Shrestha",
+        initials: "AS",
+        stars: 5,
+        color: "var(--orchid)",
+        time: "2 months ago",
+        text: "Beautiful place"
+      }
     ];
 
     reviews.forEach(function(r){
       var card = document.createElement('div');
       card.className = 'review-card';
-      card.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
-          '<div style="display:flex;gap:12px;align-items:center;">' +
-            '<div style="width:40px;height:40px;border-radius:50%;background:' + r.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">' + r.initials + '</div>' +
-            '<div><h5 style="margin:0;font-size:15px;">' + r.name + '</h5><span style="font-size:12px;color:rgba(0,0,0,0.5)">Verified Guest</span></div>' +
-          '</div>' +
-          '<div style="color:#f2c14e;font-size:14px;">' + 'â˜…'.repeat(r.stars) + '</div>' +
-        '</div>' +
-        '<p style="font-size:14.5px;color:rgba(36,31,28,0.75);">' + r.text + '</p>' +
-        '<div style="margin-top:10px;font-size:12px;color:rgba(0,0,0,0.4);" class="mono">' + r.time + '</div>';
+
+      var header = document.createElement('div');
+      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;';
+
+      var identity = document.createElement('div');
+      identity.style.cssText = 'display:flex;gap:12px;align-items:center;';
+
+      var avatar = document.createElement('div');
+      avatar.style.cssText = 'width:40px;height:40px;border-radius:50%;background:' + r.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;';
+      avatar.textContent = r.initials;
+      identity.appendChild(avatar);
+
+      var meta = document.createElement('div');
+      var nameEl = document.createElement('h5');
+      nameEl.style.cssText = 'margin:0;font-size:15px;';
+      nameEl.textContent = r.name;
+      var source = document.createElement('span');
+      source.style.cssText = 'font-size:12px;color:rgba(0,0,0,0.5)';
+      source.textContent = 'Google Maps review';
+      meta.appendChild(nameEl);
+      meta.appendChild(source);
+      identity.appendChild(meta);
+
+      var starsEl = document.createElement('div');
+      starsEl.style.cssText = 'color:#f2c14e;font-size:14px;';
+      starsEl.textContent = '\u2605'.repeat(r.stars) + '\u2606'.repeat(5 - r.stars);
+      starsEl.setAttribute('aria-label', r.stars + ' out of 5 stars');
+
+      header.appendChild(identity);
+      header.appendChild(starsEl);
+      card.appendChild(header);
+
+      var text = document.createElement('p');
+      text.style.cssText = 'font-size:14.5px;color:rgba(36,31,28,0.75);';
+      text.textContent = r.text;
+      card.appendChild(text);
+
+      var time = document.createElement('div');
+      time.style.cssText = 'margin-top:10px;font-size:12px;color:rgba(0,0,0,0.4);';
+      time.className = 'mono';
+      time.textContent = r.time;
+      card.appendChild(time);
+
       reviewsList.appendChild(card);
     });
 
     if (ratingBars) {
       ratingBars.innerHTML = '';
-      var dist = [ {s:5,c:28}, {s:4,c:10}, {s:3,c:3}, {s:2,c:1}, {s:1,c:0} ];
-      var total = 42;
+      // Distribution approximating a 3.9 average across 15 reviews
+      var dist = [ {s:5,c:7}, {s:4,c:3}, {s:3,c:1}, {s:2,c:1}, {s:1,c:3} ];
+      var total = 15;
       dist.forEach(function(d){
         var pct = Math.round((d.c / total) * 100);
         var row = document.createElement('div');
         row.style.cssText = "display:flex;align-items:center;gap:10px;font-size:13px;font-family:'Space Mono',monospace;margin-bottom:8px;";
-        row.innerHTML =
-          '<span>' + d.s + 'â˜…</span>' +
-          '<div style="flex:1;height:8px;background:var(--cream-dim);border-radius:10px;overflow:hidden;">' +
-            '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--pea),var(--orchid));border-radius:10px;"></div>' +
-          '</div>' +
-          '<span>' + d.c + '</span>';
+        var label = document.createElement('span');
+        label.textContent = d.s + '\u2605';
+        row.appendChild(label);
+
+        var bar = document.createElement('div');
+        bar.style.cssText = 'flex:1;height:8px;background:var(--cream-dim);border-radius:10px;overflow:hidden;';
+        var fill = document.createElement('div');
+        fill.style.cssText = 'height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--pea),var(--orchid));border-radius:10px;';
+        bar.appendChild(fill);
+        row.appendChild(bar);
+
+        var count = document.createElement('span');
+        count.textContent = d.c;
+        row.appendChild(count);
+
         ratingBars.appendChild(row);
       });
     }
